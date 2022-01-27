@@ -1,0 +1,373 @@
+---
+title: "PSpecter Library Demo"
+author: "Degnan, David J"
+date: "January 11th, 2022"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Bottom_Up_Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(pspecterlib)
+library(dplyr)
+library(DT)
+library(ggplot2)
+```
+
+## Description
+
+The PSpecteR Library (pspecterlib) package contains all back-end functionality of 
+the [PSpecteR web application](https://pubs.acs.org/doi/10.1021/acs.jproteome.0c00857).
+This package supports multiple steps of the proteomics quality control process,
+including matching calculated and experimental peptide/protein fragments for both
+data-dependent acquisition methods of top-down and bottom-up data in ThermoFisher raw and XML formats. 
+PSpecteR builds off existing proteomics packages in R, including mzR, MSnbase, 
+rawrr, Rdisop, and BRAIN. 
+
+In pspecter library, there are no major differences between functions to visualize
+bottom-up or top-down proteomic data. Visually, bottom-up data will have more 
+small fragments since it contains enzymatically digested proteins where top-down
+should have longer and larger fragments. This tutorial will demonstrate how 
+pspecterlib was designed to handle MS data paired with results from the database 
+search tools MS-GF+ (bottom-up) or MSPathFinderT (top-down). The basic modules of PSpecteR are: 
+
+* Visualize identified peptide fragments in experimental spectrum 
+
+* Test alternative post-translational modifications 
+
+* Map identified peptides to protein sequences 
+
+* Various Top-Down Specific Plots
+
+The database search tools, MS-GF+ and MSPathFinder, can be run within the PSpecteR application or 
+with the [MS-GF+ docker container](https://hub.docker.com/r/emslcomputing/msgf)
+or [MSPathFinder docker container](https://hub.docker.com/r/emslcomputing/mspathfindert).
+
+## Load Data 
+
+To run the modules in PSpecteR, the mass spectrometry data must first read into R. 
+Acceptable MS files are mzML, mzXML, and raw, and ID files are mzid. ID data
+is not required, but highly encouraged. Here is some example bottom-up data: 
+
+```{r copy data}
+# Create a temporary directory and copy example data there
+tmpdir <- tempdir()
+
+# Pull example bottom up data filepath 
+files <- c(
+ "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/BottomUp/BottomUp.mzML",
+ "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/BottomUp/BottomUp.mzid",
+  "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/TopDown/TopDown.mzML",
+ "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/TopDown/TopDown.mzid",
+ "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/QC_Shew.fasta"
+)
+
+# Download files to temporary directory
+for (file in files) {
+  download.file(file, file.path(tmpdir, tail(unlist(strsplit(file, "/")), 1)))
+}
+
+# Test with raw top down data
+library(rawrr)
+rawfile <- file.path(path.package(package = 'rawrr'), 'extdata', 'sample.raw')
+RAW_ScanMetadata <- get_scan_metadata(MSPath = rawfile)
+```
+
+The function to load MS data is `get_scan_metadata` which returns an object of 
+the "scan_metadata" class. Within the object is the ScanMetadata table and attributes
+which track the original MS/ID filepath, the MS File Type (raw or XML), a list of all
+MS1 scans, and an mzR/MSnbase object for downstream functionality of XML files. 
+See `?get_scan_metadata` for details regarding the ScanMetadata table. 
+
+```{r load data}
+# Create the initial scan_metadata object to pass to downstream modules 
+BU_ScanMetadata <- get_scan_metadata(MSPath = file.path(tmpdir, "BottomUp.mzML"),
+                                     IDPath = file.path(tmpdir, "BottomUp.mzid"))
+
+# Display first 6 entries in ScanMetadata table
+BU_ScanMetadata %>%
+  head() %>% 
+  datatable(options = list(scrollX = TRUE))
+```
+
+## Visualize Spectra Metadata
+
+To visualize metadata associated with each mass spectrum in the file, see 
+`?scan_metadata_plot`. Most plots have options for interactivity.
+
+```{r visualize scan metadata, fig.width = 6}
+scan_metadata_plot(BU_ScanMetadata, XVar = "Precursor M/Z", YVar = "Retention Time",
+  LabVar = "Score", Interactive = TRUE, MSFilter = 2, ScanNumFilter = c(32000, 34500))
+```
+
+## Match Calculated Fragments and Experimental Spectrum
+
+The ScanMetadata table sorts spectra from lowest to highest score, which calculates
+the quality of a peptide/protein-spectral match. The first step to visualizing this 
+match is to extract the experimental peak data. Due to computational time constraints, 
+the mzR (XML files) and rawDiag (raw file) packages do not load peak data directly 
+into R, so peak data needs to be extracted with the `get_peak_data` to generate
+a peak_data object. 
+
+```{r peak data}
+# Use the scan number of the lowest e-score
+BU_Peak <- get_peak_data(BU_ScanMetadata, 31728, MinAbundance = 1)
+
+# View the first few peaks
+BU_Peak %>%
+  head() %>% 
+  datatable()
+```
+
+In the PeakData attributes, the minimum intensity is stored, along with the
+number and percentage of peaks filtered. In this case, `r attr(BU_Peak, "pspecter")$PercentagePeaksRemain`
+of the `r attr(BU_Peak, "pspecter")$TotalNumberPeaks` remain after filtering.
+
+The experimental spectrum can now be matched to theoretical peptide/protein fragments
+using the `get_matched_peaks` algorithm. By default, isotopes are included and scored
+by cosine correlation as long as at least 2 isotopes have been detected along with
+the monoisotopic peak. There are 3 main filtering options which include filtering
+by the isotope correlation score, a minimum PPM threshold (the difference between
+experimental and calculated fragments), and an isotopic percentage which is the 
+minimum calculated abundance for matching isotopes expressed as a percentage. Other
+options for get_matched_peaks include selecting ions (a-c, x-z), adding a modification
+(calculated by `make_ptm`), trying modified ions (`make_mass_modified_ion`) or trying
+alternative sequences, spectrum, or charges. 
+
+```{r get_matched_peaks}
+BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak)
+
+BU_Match %>%
+  head() %>%
+  datatable(rownames = F, options = list(scrollX = TRUE))
+```
+
+The resulting "matched_peaks" object contains a large table of every identified
+fragment in the spectra based on ppm error, correlation score, and calculated
+abundance filter. Filter parameters are stored in the attributes, as well as
+the coverage (`r attr(BU_Match, "pspecter")$Coverage`) and the median ppm error 
+(`r attr(BU_Match, "pspecter")$MedianPPMError`) which are both used in functions that 
+calculate alternative post-translational modifications. 
+
+This resulting "matched_peaks" object can be used for multiple plots, most notably
+the `annotated_spectrum_plot` which visualizes the identified fragments on the 
+experimental spectrum.
+
+```{r annotated spectrum plot 1, fig.width = 8}
+# Make a general plot of matched fragments 
+annotated_spectrum_plot(PeakData = BU_Peak, MatchedPeaks = BU_Match, Interactive = TRUE,
+                        IncludeLabels = FALSE)
+```
+
+```{r annotated spectrum plot 2, fig.width = 6}
+# Make a specific plot of a region with annotations 
+annotated_spectrum_plot(PeakData = BU_Peak, MatchedPeaks = BU_Match, LabelSize = 6,
+                        LabelDistance = 1) +
+  xlim(c(1141.5, 1142.5)) + ylim(c(0, 12000))
+```
+
+Other plot/table options include `count_ion_annotations` which displays the number 
+of identified fragments per residue. The default for all tables and plot 
+is to count only non-isotopes:  
+
+```{r count ion annotations}
+count_ion_annotations(BU_Match) %>%
+  head() %>%
+  datatable()
+```
+
+An `error_heatmap_plot` shows the PPM error per residue and fragment. 
+
+```{r error heatmap plot, fig.width = 8}
+error_heatmap_plot(BU_Match)
+```
+
+The peptide sequence can also be annotated by lowest ppm error per a-c or x-z
+fragment with `sequence_plot`.
+
+```{r sequence plot, fig.width = 8}
+sequence_plot(BU_Match)
+```
+
+A bar plot of counts of all fragments, fragments without isotopes, and fragments 
+with unique charge states per ion can be generated with `ion_bar_plot`. 
+
+```{r ion bar plot, fig.width = 8}
+ion_bar_plot(BU_Match)
+```
+
+Extracted ion chromatograms (XIC) display the intensity and retention time for
+each isotope and adjacent charge state. XIC data can be extracted with the `get_xic`
+function and plotted with `xic_plot`. The `get_xic` function returns a xic_pspecter 
+object which tracks inputs in its attributes.
+
+```{r, get xic and xic plot, fig.width = 6}
+XIC <- get_xic(BU_ScanMetadata, MZ = 659.8596, RTRange = c(58, 60), IsotopeNumber = 0:3)
+xic_plot(XIC, Smooth = TRUE, Interactive = TRUE)
+```
+
+For each sequence, the resulting isotopic distribution for the peptide/protein can
+be plotted on each MS2's previous MS1 scan and the subsequent MS1 with `ms1_plots` which
+returns a list of 2 plots for the previous and next MS1 scan. 
+
+```{r ms1 plot 1, fig.width = 8}
+MS1Plots <- ms1_plots(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728, Window = 5,
+  Sequence = NULL, Interactive = TRUE, IsotopicPercentageFilter = 10)
+MS1Plots[[1]]
+```
+
+```{r ms1 plot 2, fig.width = 8}
+MS1Plots[[2]]
+```
+
+## Test Alternative Post-Translational Modifications
+
+The design of `get_matched_peaks` allows for fast and easy comparison across 
+post-translational modifications (PTMs). The `make_ptm` function makes it possible 
+to test alternative modifications, and the `make_mass_modified_ion` allows for testing of mass 
+modified a, b, c, x, y, and z ions with a new symbol to indicate its difference. 
+
+For example, if we compare our original matched peaks object to one with an acetyl
+at position 2, a methyl at position 6, and protonated b and z ions: 
+
+```{r}
+BU_Match2 <- get_matched_peaks(
+  ScanMetadata = BU_ScanMetadata,
+  PeakData = BU_Peak,
+  PTMs = make_ptm(Name = c("Acetyl", "Methyl"),
+                  AMU_Change = c(42.010565, 14.015650),
+                  N_Position = c(2, 16),
+                  Molecular_Formula = list(list("C" = 2, "H" = 2, "O" = 1),
+                                           list("C" = 1, "H" = 2))),
+  AlternativeIonGroups = make_mass_modified_ion(Ion = c("b", "z"),
+                                                Symbol = c("+", "+"),
+                                                AMU_Change = c(1.00727647, 1.00727647))
+)
+
+Results <- rbind(
+  c("BU_Match", attr(BU_Match, "pspecter")$Coverage, attr(BU_Match, "pspecter")$MedianPPMError),
+  c("BU_Match2", attr(BU_Match2, "pspecter")$Coverage, attr(BU_Match2, "pspecter")$MedianPPMError)
+) %>%
+  data.frame() 
+colnames(Results) <- c("Test", "Coverage", "MedianPPMError")
+Results %>%
+  datatable()
+```
+
+## Map Identified Peptides to Protein Sequences 
+
+If ID data and the FASTA file are provided, identified peptides can be mapped 
+to protein sequences with a variety of options. To generate these plots, 
+first a protein_table object from `get_protein_table` should be generated. 
+
+```{r get peptide coverage}
+ProteinTable <- get_protein_table(BU_ScanMetadata, file.path(tmpdir, "QC_Shew.fasta"),
+  QValueMaximum = 0.1, ScoreMaximum = 0.00003, RemoveContaminants = TRUE)
+
+ProteinTable %>%
+  head() %>%
+  datatable()
+```
+
+The protein table calculates the number of peptides per protein that fall within the 
+Score/QValue threshold, assuming that these values exist in the ID file. Otherwise,
+they are ignored. The literature sequence for each protein is also stored in this 
+table, but has been removed from this display for visualization purposes. 
+
+After the protein table has been generated, a peptide_coverage object can be 
+generated by the `get_peptide_coverage` which contains two tables for the three
+coverage plots. The first, `coverage_plot` shows where each peptide aligns to the
+literature protein sequence based on position and scan number. The plot can be 
+colored by Score or Q-Value. 
+
+```{r coverage plot, fig.width = 8}
+PeptideCoverage <- get_peptide_coverage(
+  ScanMetadata = BU_ScanMetadata, ProteinTable = ProteinTable, ProteinID = "SO_0225"
+)
+coverage_plot(PeptideCoverage, ColorByScore = "Score") + ggtitle("SO_0225")
+```
+
+The `coverage_lit_seq_plot` displays the literature sequence with each identified
+residue in green. 
+
+```{r coverage lit seq plot, fig.width = 8}
+coverage_lit_seq_plot(PeptideCoverage) + theme(legend.position = "none") 
+```
+
+`coverage_bar_plot` shows the count of identified residues per amino acid position. 
+
+```{r coverage bar plot, fig.width = 8}
+coverage_bar_plot(PeptideCoverage, Interactive = TRUE)
+```
+
+## Various Top-Down Specific Plots
+
+All of the previous modules have been designed to work with both bottom-up and
+top-down data. This section pertains to only top-down data processed with the 
+MSPathFinder suite of tools (which includes PbfGen, ProMex, and MSPathFinderT). 
+If ProMex (top-down feature identification) has been run, `get_ms1ft` can be run
+to return a ms1ft object which can be plotted with `promex_feature_plot`. 
+
+First, pull the example data:
+
+```{r pull top down data}
+download.file("https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/TopDown/TopDown.ms1ft", file.path(tmpdir, "TopDown.ms1ft"))
+
+download.file("https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/TopDown/TopDown_IcTarget.tsv", file.path(tmpdir, "TopDown_IcTarget.tsv"))
+```
+
+Then, generate the ms1ft object: 
+
+```{r get ms1ft}
+MS1FT <- get_ms1ft(
+  MS1FTPath = file.path(tmpdir, "TopDown.ms1ft"),
+  TargetsPath = file.path(tmpdir, "TopDown_IcTarget.tsv"),
+  TrimColumns = TRUE
+)
+
+MS1FT %>%
+  head(8) %>%
+  datatable(options = list(scrollX = TRUE))
+```
+
+And finally, the `promex_feature_plot` can be made, either by only plotting 
+proteins assigned to features, or all features identified: 
+
+```{r promex feature plot, fig.width = 8}
+promex_feature_plot(MS1FT)
+```
+
+## Note on Making and Adding Molecular Formulas
+
+Though a background functionality of the package, PSpecteR library allows for 
+the addition/subtraction of molecular formulas, including capabilities to handle 
+"negatives" in formulas, which typically means that an element or functional group
+is lost during modification. 
+
+```{r formula example}
+Molecule1 <- make_molecule(list("C" = 2, "H" = 3, "O" = 1))
+Molecule2 <- make_molecule(list("O" = -2))
+
+add_molecules(Molecule1, Molecule2, CapNegatives = TRUE)$Formula
+```
+
+
+```{r formula example 2}
+add_molecules(Molecule1, Molecule2, CapNegatives = FALSE)$Formula
+```
+
+
+
+
+

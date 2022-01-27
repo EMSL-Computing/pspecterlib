@@ -1,0 +1,44 @@
+Package: pspecterlib
+Type: Package
+Title: PSpecteR Library - Visualization tools for top-down and bottom-up proteomics data
+Version: 0.0.1
+Date: 2022-01-07
+Authors@R: c(person("David", "Degnan", email = "david.degnan@pnnl.gov", role = c("aut", "cre")))
+Description: Provides functionality to visually examine LC-MS top-down and bottom-up proteomics data. Supports reading various mass spectrometry files, labeling spectra with fragmenetation patterns, testing post-translational modifications, plotting where identified fragments map to reference sequences, and visualizing algorithmic output from database search tools (MSPathFinder) and metadata. 
+License: MIT + file LICENSE
+Depends: R (>= 4.1.2)
+LazyData: TRUE
+URL: https://github.com/emsl-computing/pspecter-lib
+BugReports: https://github.com/emsl-computing/pspecter-lib/issues
+VignetteBuilder: knitr
+biocViews:
+Imports: 
+    rhdf5,
+    mzR,
+    MSnbase,
+    rawrr,
+    BRAIN,
+    Rdisop,
+    lsa,
+    seqinr,
+    dplyr,
+    reshape2,
+    gtools,
+    readxl,
+    data.table,
+    plotly,
+    ggplot2,
+    magrittr,
+    purrr,
+    tidyr,
+    htmltools,
+    RColorBrewer
+Suggests: 
+    rmarkdown,
+    knitr
+RoxygenNote: 7.1.2
+Encoding: UTF-8
+NeedsCompilation: yes
+Packaged: 2021-06-10 19:39:08 UTC; degn400
+Author: David Degnan [aut, cre]
+Maintainer: David Degnan <david.degnan@pnnl.gov>

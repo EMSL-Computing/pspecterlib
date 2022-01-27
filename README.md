@@ -1,7 +1,7 @@
 # The PSpecteR Library (pspecterlib)
 Allows users to use the backend functionality of the PSpecteR proteomics visualization application independent of the app. 
 
-** Highlights of PSpecteR functionality include:**
+**Highlights of PSpecteR functionality include:**
 
 1. Calculating and visualizing peptide/protein fragmentation patterns on experimental spectra
 2. Generating extracted ion chromatograms (XICs)
@@ -11,4 +11,4 @@ Allows users to use the backend functionality of the PSpecteR proteomics visuali
 
 # How to install 
 
-`install_github("EMSL-Computing/pspecterlib")`
+`devtools::install_github("EMSL-Computing/pspecterlib")`

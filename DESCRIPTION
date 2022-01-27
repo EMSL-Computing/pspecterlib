@@ -6,7 +6,7 @@ Date: 2022-01-07
 Authors@R: c(person("David", "Degnan", email = "david.degnan@pnnl.gov", role = c("aut", "cre")))
 Description: Provides functionality to visually examine LC-MS top-down and bottom-up proteomics data. Supports reading various mass spectrometry files, labeling spectra with fragmenetation patterns, testing post-translational modifications, plotting where identified fragments map to reference sequences, and visualizing algorithmic output from database search tools (MSPathFinder) and metadata. 
 License: MIT + file LICENSE
-Depends: R (>= 4.1.2)
+Depends: R (>= 4.0.0)
 LazyData: TRUE
 URL: https://github.com/emsl-computing/pspecter-lib
 BugReports: https://github.com/emsl-computing/pspecter-lib/issues

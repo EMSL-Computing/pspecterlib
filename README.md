@@ -9,6 +9,10 @@ Allows users to use the backend functionality of the PSpecteR proteomics visuali
 4. Testing alternative peptides and mass modified ions 
 5. Visualizing output from MSPathFinderT
 
+...for both top-down and bottom-up proteomics. 
+
+*Inputs:* MS file (mzML or ThermoFisher raw), ID file (optional mzid), FASTA file (optional) 
+
 # How to install 
 
 `devtools::install_github("EMSL-Computing/pspecterlib")`

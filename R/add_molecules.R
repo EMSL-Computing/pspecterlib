@@ -39,6 +39,13 @@ add_molecules <- function(..., CapNegatives = TRUE) {
   ########################
   ## BUILD ADDED OBJECT ##
   ########################
+  
+  # Remove NULL options
+  getNULLs <- which(sapply(molecule_objects, is.null)) 
+  if (length(getNULLs) > 0) {
+    molecule_objects <- molecule_objects[-getNULLs]
+  }
+  if (length(molecule_objects) == 0) stop("No molecules to add.")
 
   # Create list of atoms of molecular formulas added together
   AtomList <- do.call(dplyr::bind_rows, lapply(molecule_objects, function(mol) {

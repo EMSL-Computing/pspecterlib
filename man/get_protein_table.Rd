@@ -37,9 +37,9 @@ Protein \tab The name of the protein (protein ID) from the ID file \cr
 \tab \cr
 Number of Peptides \tab The count of peptides identified for that protein. \cr
 \tab \cr
-Average Q Value \tab The mean Q Value for the peptides identified for that protein. \cr
+Median Q Value \tab The median Q Value for the peptides identified for that protein. \cr
 \tab \cr
-Average Score \tab The mean score for the peptides identified for that protein. \cr
+Median Score \tab The median score for the peptides identified for that protein. \cr
 \tab \cr
 Description \tab The protein's description as provided in the ID file. \cr
 \tab \cr

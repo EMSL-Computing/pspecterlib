@@ -34,7 +34,7 @@ make_ptm <- function(Name,
 
   # Assert that Names is a vector of characters
   if (is.null(Name) || !is.character(Name)) {
-    stop("Names must be a vector of characters describing each modification.")
+    stop("Name must be a vector of strings describing each modification.")
   }
 
   # Assert that AMU_Change is a vector of masses
@@ -51,7 +51,7 @@ make_ptm <- function(Name,
   N_Position <- N_Position %>% abs() %>% round()
 
   # Assert that the three vectors are of the same length
-  if (length(Name) != length(AMU_Change & length(Name) != length(N_Position))) {
+  if (length(Name) != length(AMU_Change) | length(Name) != length(N_Position)) {
     stop("The length of Names, AMU_Change, and N_Position must be the same.")
   }
 

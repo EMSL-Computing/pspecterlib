@@ -30,7 +30,7 @@ count_ion_annotations <- function(MatchedPeaks,
   }
 
   # Assert that Include Isotopes is a single logical
-  if (is.logical(IncludeIsotopes) == FALSE || length(IncludeIsotopes) > 1) {
+  if (is.na(IncludeIsotopes) || is.logical(IncludeIsotopes) == FALSE || length(IncludeIsotopes) > 1) {
     stop("IncludeIsotopes needs to be a single logical: a TRUE or FALSE.")
   }
 

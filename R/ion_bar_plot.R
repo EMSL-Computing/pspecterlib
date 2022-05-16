@@ -35,7 +35,10 @@ ion_bar_plot <- function(MatchedPeaks,
 
   # Assert that Interactive is a single logical
   if (is.logical(Interactive) == FALSE || length(Interactive) > 1) {
-    stop("Interactive must be a single logical value (i.e. TRUE or FALSE).")
+    stop("Interactive must be a single logical value TRUE or FALSE.")
+  }
+  if (is.na(Interactive)) {
+    Interactive <- FALSE
   }
 
   ############################

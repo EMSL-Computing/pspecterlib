@@ -51,7 +51,7 @@ ms1_plots <- function(ScanMetadata,
 
   # Assert the scan number is an integer
   if (!(is.numeric(ScanNumber))) {
-    stop("ScanNumber must be an integer")
+    stop("ScanNumber must be an integer.")
   }
 
   # Round scan number
@@ -71,7 +71,7 @@ ms1_plots <- function(ScanMetadata,
   # Check sequence
   if (!is.null(Sequence)) {
     if (!is_sequence(Sequence)) {
-      stop("Sequence is not an acceptable input. See ?is_sequence.")
+      stop("Sequence is not an acceptable input. See is_sequence.")
     }
   }
 
@@ -81,7 +81,7 @@ ms1_plots <- function(ScanMetadata,
   }
 
   # Assert that RemoveNegativeIsotopes is a logical and not NA
-  if (!is.logical(RemoveNegativeIsotopes) || is.na(RemoveNegativeIsotopes)) {
+  if (is.na(RemoveNegativeIsotopes) || !is.logical(RemoveNegativeIsotopes) || is.na(RemoveNegativeIsotopes)) {
     stop("RemoveNegativeIsotopes parameter must be either TRUE or FALSE.")
   }
 
@@ -97,28 +97,23 @@ ms1_plots <- function(ScanMetadata,
 
   # Pull Previous Scan Number
   PreviousMS1ScanNum <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor Scan"] %>%
-    unlist()
+    unlist() %>% utils::head(1)
 
-  # If Previous Scan Number is NA, the next MS1 scan will be the first
-  if (is.na(PreviousMS1ScanNum)) {
-    NextMS1ScanNum <- attr(ScanMetadata, "pspecter")$MS1Scans[1] %>% unlist()
+  # Get the position of the Next MS1 Scan Number
+  NextMS1Pos <- match(PreviousMS1ScanNum, attr(ScanMetadata, "pspecter")$MS1Scans %>% unlist()) + 1
+
+  # If the position is beyond the vector, NextMS1ScanNum is NA.
+  if (NextMS1Pos > length(attr(ScanMetadata, "pspecter")$MS1Scans %>% unlist())) {
+    NextMS1ScanNum <- NA
   } else {
-
-    # Get the position of the Next MS1 Scan Number
-    NextMS1Pos <- match(PreviousMS1ScanNum, attr(ScanMetadata, "pspecter")$MS1Scans %>% unlist()) + 1
-
-    # If the position is beyond the vector, NextMS1ScanNum is NA.
-    if (NextMS1Pos > length(attr(ScanMetadata, "pspecter")$MS1Scans %>% unlist())) {
-      NextMS1ScanNum <- NA
-    } else {
-      NextMS1ScanNum <- attr(ScanMetadata, "pspecter")$MS1Scans[NextMS1Pos] %>% unlist()
-    }
-
+    NextMS1ScanNum <- attr(ScanMetadata, "pspecter")$MS1Scans[NextMS1Pos] %>% unlist() %>% utils::head(1)
   }
 
   # Pull Previous MS1 Peak Data and MZ
   PreviousPeaks <- get_peak_data(ScanMetadata, PreviousMS1ScanNum)
-  NextPeaks <- get_peak_data(ScanMetadata, NextMS1ScanNum)
+  if (!is.na(NextMS1ScanNum)) {
+    NextPeaks <- get_peak_data(ScanMetadata, NextMS1ScanNum)
+  }
 
   # Get the Precursor M/Z
   PrecursorMZ <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor M/Z"] %>% unlist()
@@ -130,8 +125,9 @@ ms1_plots <- function(ScanMetadata,
     return(Peaks)
   }
   PreviousPeaks <- peakSubset(PreviousPeaks, PrecursorMZ, Window)
-  NextPeaks <- peakSubset(NextPeaks, PrecursorMZ, Window)
-
+  if (!is.na(NextMS1ScanNum)) {
+    NextPeaks <- peakSubset(NextPeaks, PrecursorMZ, Window)
+  }
 
   # Use a different sequence if sequence is NULL
   if (is.null(Sequence)) {
@@ -146,8 +142,14 @@ ms1_plots <- function(ScanMetadata,
     }
 
     # If Sequence is still NULL or length 0, make Sequence an empty string
-    if (is.null(Sequence) || length(Sequence) == 0) {
-      Sequence <- ""
+    if (is.na(Sequence) || is.null(Sequence) || length(Sequence) == 0) {
+      return(
+        list(
+          annotated_spectrum_plot(PreviousPeaks, Interactive = Interactive),
+          annotated_spectrum_plot(NextPeaks, Interactive = Interactive)
+        )
+      )
+
     }
 
   }
@@ -215,34 +217,50 @@ ms1_plots <- function(ScanMetadata,
 
   # Merge values and zero fill
   PreviousPeaks <- mergeIsoDistandPeaks(IsoDist, PreviousPeaks)
-  NextPeaks <- mergeIsoDistandPeaks(IsoDist, NextPeaks)
+  if (!is.na(NextMS1ScanNum)) {
+    NextPeaks <- mergeIsoDistandPeaks(IsoDist, NextPeaks)
+  }
 
   # Set color pallete
   ColorListPre <- RColorBrewer::brewer.pal(length(unique(PreviousPeaks$`Peak Description`)) - 1, "Set1")
   names(ColorListPre) <- unique(PreviousPeaks$`Peak Description`)[grepl("M", unique(PreviousPeaks$`Peak Description`))]
+  ColorListPre["Experimental"] <- "#000000"
 
-  ColorListNext <- RColorBrewer::brewer.pal(length(unique(NextPeaks$`Peak Description`)) - 1, "Set1")
-  names(ColorListNext) <- unique(NextPeaks$`Peak Description`)[grepl("M", unique(NextPeaks$`Peak Description`))]
-  ColorListPre["Experimental"] <- ColorListNext["Experimental"] <- "#000000"
+  if (!is.na(NextMS1ScanNum)) {
+    ColorListNext <- RColorBrewer::brewer.pal(length(unique(NextPeaks$`Peak Description`)) - 1, "Set1")
+    names(ColorListNext) <- unique(NextPeaks$`Peak Description`)[grepl("M", unique(NextPeaks$`Peak Description`))]
+    ColorListNext["Experimental"] <- "#000000"
+  }
 
   # Make plots
   PreviousMS1 <- ggplot2::ggplot(PreviousPeaks, ggplot2::aes(x = `M/Z`, y = Intensity, color = `Peak Description`)) +
     ggplot2::theme_bw() + ggplot2::geom_line(size = 1) + ggplot2::scale_color_manual(values = ColorListPre) +
     ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
-  NextMS1 <- ggplot2::ggplot(NextPeaks, ggplot2::aes(x = `M/Z`, y = Intensity, color = `Peak Description`)) +
-    ggplot2::theme_bw() + ggplot2::geom_line(size = 1) + ggplot2::scale_color_manual(values = ColorListNext) +
-    ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
+  if (!is.na(NextMS1ScanNum)) {
+    NextMS1 <- ggplot2::ggplot(NextPeaks, ggplot2::aes(x = `M/Z`, y = Intensity, color = `Peak Description`)) +
+      ggplot2::theme_bw() + ggplot2::geom_line(size = 1) + ggplot2::scale_color_manual(values = ColorListNext) +
+      ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
+  }
+
 
   # Return plots differently if interactive or not
   if (Interactive == FALSE) {
     PreviousMS1 <- PreviousMS1 + ggplot2::ggtitle(bquote("Previous MS1, Precursor"~italic(.("M/Z:"))~.(PrecursorMZ)))
-    NextMS1 <- NextMS1 + ggplot2::ggtitle(bquote("Next MS1, Precursor"~italic(.("M/Z:"))~.(PrecursorMZ)))
+    if (!is.na(NextMS1ScanNum)) {
+      NextMS1 <- NextMS1 + ggplot2::ggtitle(bquote("Next MS1, Precursor"~italic(.("M/Z:"))~.(PrecursorMZ)))
+    } else {
+      NextMS1 <- NULL
+    }
     return(list(PreviousMS1, NextMS1))
   } else {
     PreviousMS1 <- PreviousMS1 %>% plotly::ggplotly() %>%
-      plotly::layout(title = htmltools::HTML(paste0("Previous MS1, Precursor <i>M/Z</i>:", PrecursorMZ)))
-    NextMS1 <- NextMS1 %>% plotly::ggplotly() %>%
-      plotly::layout(title = htmltools::HTML(paste0("Next MS1, Precursor <i>M/Z</i>:", PrecursorMZ)))
+      plotly::layout(title = htmltools::HTML(paste0("Previous MS1, Precursor <i>M/Z</i>:", PrecursorMZ)), margin = list(t = 50))
+    if (!is.na(NextMS1ScanNum)) {
+      NextMS1 <- NextMS1 %>% plotly::ggplotly() %>%
+        plotly::layout(title = htmltools::HTML(paste0("Next MS1, Precursor <i>M/Z</i>:", PrecursorMZ)), margin = list(t = 50))
+    } else {
+      NextMS1 <- NULL
+    }
     return(list(PreviousMS1, NextMS1))
   }
 

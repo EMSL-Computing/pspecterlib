@@ -177,13 +177,13 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   }
 
   # Assert that the CalculateIsotopes parameter is a single logical value
-  if (is.logical(CalculateIsotopes) == FALSE || length(CalculateIsotopes) > 1) {
-    stop("CalculateIsotopes must be a single logical value (TRUE / FALSE).")
+  if (is.na(CalculateIsotopes) || is.logical(CalculateIsotopes) == FALSE || length(CalculateIsotopes) > 1) {
+    stop("CalculateIsotopes must be a single logical value TRUE or FALSE.")
   }
 
   # Assert that Isotopic Percentage is a single number
   if (is.numeric(IsotopicPercentage) == FALSE || length(IsotopicPercentage) > 1) {
-    stop("IsotopicPercentage must be a single numeric value. For example: 10.")
+    stop("IsotopicPercentage must be a single numeric value. For example, 10.")
   }
 
   # Convert Isotopic Percentage to a positive number
@@ -196,7 +196,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
   # Assert that the Correlation Score is a single number
   if (is.numeric(CorrelationScore) == FALSE || length(CorrelationScore) > 1) {
-    stop("CorrelationScore must be a single numeric value. For example: 0.1.")
+    stop("CorrelationScore must be a single numeric value. For example, 0.1.")
   }
 
   # Convert Correlation Score to a positive number
@@ -211,7 +211,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   if (is.null(AlternativeSequence) == FALSE) {
 
     if (is_sequence(AlternativeSequence) == FALSE) {
-      stop("The provided AlternativeSequence is not acceptable. See ?is_sequence for more details.")
+      stop("The provided AlternativeSequence is not acceptable. See is_sequence for more details.")
     }
 
   }
@@ -220,7 +220,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   if (is.null(AlternativeSpectrum) == FALSE) {
 
     if ("peak_data" %in% class(AlternativeSpectrum) == FALSE) {
-      stop("AlternativeSpectrum must be a data.table with two numeric columns: M/Z and Intensity.")
+      stop("AlternativeSpectrum must be made with make_peak_data.")
     } else {PeakData <- AlternativeSpectrum}
 
   }
@@ -228,18 +228,12 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   # Assert that alternative charge is a single number
   if (is.null(AlternativeCharge) == FALSE) {
 
-    if (length(AlternativeCharge) > 1 & is.numeric(AlternativeCharge) == FALSE) {
+    if (length(AlternativeCharge) > 1 | is.numeric(AlternativeCharge) == FALSE) {
       stop("AlternativeCharge must be a single number.")
     }
 
     # Round to the nearest positive integer
     AlternativeCharge <- AlternativeCharge %>% abs() %>% round()
-
-    # If Alternative Charge is less than 1, set it to 1
-    if (AlternativeCharge < 1) {AlternativeCharge <- 1}
-
-    # If Alternative Charge is greater than 100, set it to 100.
-    if (AlternativeCharge > 100) {AlternativeCharge <- 100}
 
   }
 
@@ -305,9 +299,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   ##########################
 
   # Get Scan Number
-  if (is.null(PeakData) == FALSE) {
-    ScanNumber <- attr(PeakData, "pspecter")$ScanNumber
-  } else {ScanNumber <- NA}
+  ScanNumber <- attr(PeakData, "pspecter")$ScanNumber
 
   # Get the sequence
   if (is.null(AlternativeSequence)) {
@@ -328,11 +320,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   # Calculate fragment data with MSnbase
   Fragments <- MSnbase::calculateFragments(sequence = Sequence, type = IonGroups,
                                            z = 1:PrecursorCharge) %>% data.table::data.table()
-
-  # Proceed onward only if there is fragment data
-  if (nrow(Fragments) == 0) {
-    message("No fragments identified."); return(NULL)
-  }
 
   # Rename Fragments
   colnames(Fragments) <- c("M/Z", "Ion", "Type", "Position", "Z", "Sequence")

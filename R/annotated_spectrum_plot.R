@@ -48,13 +48,13 @@ annotated_spectrum_plot <- function(PeakData,
   }
 
   # Assert that Include Isotopes is a single logical
-  if (is.logical(IncludeIsotopes) == FALSE || length(IncludeIsotopes) > 1) {
-    stop("IncludeIsotopes must be a single logical value (i.e. TRUE or FALSE).")
+  if (is.na(IncludeIsotopes) || is.logical(IncludeIsotopes) == FALSE || length(IncludeIsotopes) > 1) {
+    stop("IncludeIsotopes must be a single logical value TRUE or FALSE.")
   }
 
   # Assert that Include Labels is a single logical
-  if (is.logical(IncludeLabels) == FALSE || length(IncludeLabels) > 1) {
-    stop("IncludeLabels must be a single logical value (i.e. TRUE or FALSE).")
+  if (is.na(IncludeLabels) || is.logical(IncludeLabels) == FALSE || length(IncludeLabels) > 1) {
+    stop("IncludeLabels must be a single logical value TRUE or FALSE.")
   }
 
   # Assert that Label Size is a numeric
@@ -74,8 +74,8 @@ annotated_spectrum_plot <- function(PeakData,
   LabelDistance <- abs(LabelDistance)
 
   # Assert that Interactive is a single logical
-  if (is.logical(Interactive) == FALSE || length(Interactive) > 1) {
-    stop("Interactive must be a single logical value (i.e. TRUE or FALSE).")
+  if (is.na(Interactive) || is.logical(Interactive) == FALSE || length(Interactive) > 1) {
+    stop("Interactive must be a single logical value TRUE or FALSE.")
   }
 
   ###############
@@ -103,11 +103,14 @@ annotated_spectrum_plot <- function(PeakData,
     # Generate plot
     Spectrum <- ggplot2::ggplot(Peaks, ggplot2::aes(x = `M/Z`, y = Intensity)) +
       ggplot2::theme_bw() + ggplot2::geom_line(size = 1) +
-      ggplot2::ggtitle(paste("Scan Number:", attr(PeakData, "pspecter")$ScanNumber)) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
 
     # Return interactive if requested
-    if (Interactive) {return(Spectrum %>% plotly::ggplotly())} else {Spectrum}
+    if (Interactive) {
+      return(Spectrum %>% plotly::ggplotly())
+    } else {
+      return(Spectrum)
+    }
 
   } else {
 
@@ -213,7 +216,7 @@ annotated_spectrum_plot <- function(PeakData,
       }
 
       # Add title and axes if scan number is 0
-      if (attr(PeakData, "pspecter")$ScanNumber == 0) {
+      if (is.null(attr(PeakData, "pspecter")$ScanNumber) || attr(PeakData, "pspecter")$ScanNumber == 0) {
 
         # Add title and axes
         p <- p %>% plotly::layout(xaxis = list(title = '<i>m/z</i> (Mass to Charge)'),

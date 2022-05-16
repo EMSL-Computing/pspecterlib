@@ -35,12 +35,12 @@ error_heatmap_plot <- function(MatchedPeaks,
   }
 
   # Assert that Include Isotopes is a single logical
-  if (is.logical(IncludeIsotopes) == FALSE || length(IncludeIsotopes) > 1) {
+  if (is.na(IncludeIsotopes) || is.logical(IncludeIsotopes) == FALSE || length(IncludeIsotopes) > 1) {
     stop("IncludeIsotopes needs to be a single logical: a TRUE or FALSE.")
   }
 
   # Assert that Interactive is a single logical
-  if (is.logical(Interactive) == FALSE || length(Interactive) > 1) {
+  if (is.na(Interactive) || is.logical(Interactive) == FALSE || length(Interactive) > 1) {
     stop("Interactive needs to be a single logical: a TRUE or FALSE.")
   }
 
@@ -101,7 +101,11 @@ error_heatmap_plot <- function(MatchedPeaks,
                                   values = c(0,0.5,1), na.value = "white")
 
   # Return interactive if directed
-  if (Interactive) {return(HeatmapPlot %>% plotly::ggplotly())} else {return(HeatmapPlot)}
+  if (Interactive) {
+    return(HeatmapPlot %>% plotly::ggplotly())
+  } else {
+    return(HeatmapPlot)
+  }
 
 }
 

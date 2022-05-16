@@ -45,6 +45,8 @@ Q Value \tab An adjusted p-value that also measures how well the calculated and 
 \tab \cr
 Decoy \tab A logical (TRUE/FALSE/NA) indicating whether the identified protein is a protein decoy or not. \cr
 \tab \cr
+Modifications \tab A string indicating whether a modification was identified or not. The format is "Name@Position=MW & Name2@Position2=MW2" etc \cr
+\tab \cr
 }
 
 

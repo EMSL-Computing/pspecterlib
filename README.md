@@ -1,3 +1,7 @@
+  <!-- badges: start -->
+  [![Codecov test coverage](https://codecov.io/gh/EMSL-Computing/pspecterlib/branch/master/graph/badge.svg)](https://app.codecov.io/gh/EMSL-Computing/pspecterlib?branch=master)
+  <!-- badges: end -->
+
 # The PSpecteR Library (pspecterlib)
 Allows users to use the backend functionality of the PSpecteR proteomics visualization application independent of the app. 
 

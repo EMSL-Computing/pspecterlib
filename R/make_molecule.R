@@ -23,16 +23,18 @@ make_molecule <- function(AtomList, FormulaOnly = FALSE) {
 
   # AtomList should be a list
   if (!is.list(AtomList)) {
-    stop('AtomList should be a list where the names are the element, and the values are the counts of that element. Example: AtomList = list("C" = 6, "H" = 12, "O" = 6, "N" = 0)')
+    stop("AtomList should be a list where the names are the element, and the values are the counts of that element.")
   }
 
-  # If Atom List is length 0, return a carbon with 0
+  # Formula list must be a true or false
+  if (!is.logical(FormulaOnly) | is.na(FormulaOnly)) {
+    stop("FormulaOnly must be a TRUE or FALSE.")
+  }
+
+  # If Atom List is length 0, return an error
   if (length(AtomList) == 0) {
-    res <- list("Molecule" = data.frame("C" = 0, "Formula" = "C0"))
-    class(res) <- "molecule_pspecter"
-    return(res)
+    stop("AtomList cannot be length 0.")
   }
-
 
   #############################
   ## MAKE MOLECULE DATAFRAME ##

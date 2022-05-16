@@ -83,10 +83,18 @@ get_peptide_coverage <- function(ScanMetadata,
     unlist()
 
   # Get the Q Value Maximum. If it's 1, set the filter to NULL.
-  QValueMaximum <- if (attr(ProteinTable, "pspecter")$QValueMaximum == 1) {NULL} else {attr(ProteinTable, "pspecter")$QValueMaximum}
+  QValueMaximum <- if (attr(ProteinTable, "pspecter")$QValueMaximum == 1) {
+    NULL
+  } else {
+    attr(ProteinTable, "pspecter")$QValueMaximum
+  }
 
   # Get the Score Maximum. If it's 1, set the filter to NULL.
-  ScoreMaximum <- if (attr(ProteinTable, "pspecter")$ScoreMaximum == 1) {NULL} else {attr(ProteinTable, "pspecter")$ScoreMaximum}
+  ScoreMaximum <- if (attr(ProteinTable, "pspecter")$ScoreMaximum == 1) {
+    NULL
+  } else {
+    attr(ProteinTable, "pspecter")$ScoreMaximum
+  }
 
   ## Data Table 1: Peptides by Position-----------------------------------------
 
@@ -109,11 +117,11 @@ get_peptide_coverage <- function(ScanMetadata,
 
   # Apply filters that are not NULL
   if (is.null(QValueMaximum) == FALSE) {
-    PeptidesByPosition <- PeptidesByPosition %>% filter(`Q Value` <= QValueMaximum)
+    PeptidesByPosition <- PeptidesByPosition %>% dplyr::filter(`Q Value` <= QValueMaximum)
   }
 
   if (is.null(ScoreMaximum) == FALSE) {
-    PeptidesByPosition <- PeptidesByPosition %>% filter(Score <= ScoreMaximum)
+    PeptidesByPosition <- PeptidesByPosition %>% dplyr::filter(Score <= ScoreMaximum)
   }
 
   # Add the reference sequence

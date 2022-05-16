@@ -4,7 +4,7 @@
 \alias{make_molecule}
 \title{Makes a Molecule Dataframe, Helper Function to get_peptide_coverage}
 \usage{
-make_molecule(AtomList)
+make_molecule(AtomList, FormulaOnly = FALSE)
 }
 \arguments{
 \item{AtomList}{A list of atom counts}

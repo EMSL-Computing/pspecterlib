@@ -68,6 +68,11 @@ get_ms1ft <- function(MS1FTPath,
 
   }
 
+  # Trim columns must be a true or false
+  if (is.na(TrimColumns) || is.logical(TrimColumns) == FALSE || length(TrimColumns) > 1) {
+    stop("TrimColumns must be a TRUE or FALSE.")
+  }
+
   ###############################
   ## GENERATE MS1FT DATA TABLE ##
   ###############################

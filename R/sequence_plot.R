@@ -38,12 +38,12 @@ sequence_plot <- function(MatchedPeaks,
   }
 
   # Assert that Include Isotopes is a single logical
-  if (is.logical(IncludeIsotopes) == FALSE || length(IncludeIsotopes) > 1) {
+  if (is.na(IncludeIsotopes) || is.logical(IncludeIsotopes) == FALSE || length(IncludeIsotopes) > 1) {
     stop("IncludeIsotopes needs to be a single logical: a TRUE or FALSE.")
   }
 
   # Assert that Remove Charge Annotation is a single logical
-  if (is.logical(RemoveChargeAnnotation) == FALSE || length(RemoveChargeAnnotation) > 1) {
+  if (is.na(RemoveChargeAnnotation) || is.logical(RemoveChargeAnnotation) == FALSE || length(RemoveChargeAnnotation) > 1) {
     stop("RemoveChargeAnnotation needs to be a single logical: a TRUE or FALSE.")
   }
 
@@ -116,7 +116,7 @@ sequence_plot <- function(MatchedPeaks,
   SeqDF$abcAnnotationY <- SeqDF$y - 0.25
   SeqDF$abcAnnotation <- lapply(1:nchar(Seq), function(num) {
     Query <- BestMatchABC[BestMatchABC$`N Position` == num,]
-    if (length(Query) != 0) {
+    if (nrow(Query) != 0) {
       charge <- ifelse(Query$Z == 1, "", paste0(Query$Z, "+"))
       if (RemoveChargeAnnotation) {charge <- ""}
       paste(Query$Ion, charge)
@@ -125,7 +125,7 @@ sequence_plot <- function(MatchedPeaks,
   SeqDF$xyzAnnotationY <- SeqDF$y + 0.25
   SeqDF$xyzAnnotation <- lapply(1:nchar(Seq), function(num) {
     Query <- BestMatchXYZ[BestMatchXYZ$`N Position` == num,]
-    if (length(Query) != 0) {
+    if (nrow(Query) != 0) {
       charge <- ifelse(Query$Z == 1, "", paste0(Query$Z, "+"))
       if (RemoveChargeAnnotation) {charge <- ""}
       paste(Query$Ion, charge)

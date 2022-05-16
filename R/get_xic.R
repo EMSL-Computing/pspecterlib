@@ -64,17 +64,21 @@ get_xic <- function(ScanMetadata,
 
   # Assert that RT is a range
   if (!is.numeric(RTRange) || length(RTRange) != 2 || RTRange[1] > RTRange[2]) {
-    stop("RT range must be written as a vector with two numerics, a min and max. Example: c(58, 60).")
+    stop("RT range must be written as a vector with two numerics, a min and max.")
   }
 
   # Assert that the isotope number is in range 0:5
-  if (!is.integer(IsotopeNumber) || min(IsotopeNumber) < 0 || max(IsotopeNumber) > 5) {
+  if (!is.numeric(IsotopeNumber) || min(IsotopeNumber) < 0 || max(IsotopeNumber) > 5) {
     stop("The range of isotope values must be a vector of integers with values between 0 and 5.")
+  } else {
+    IsotopeNumber <- floor(IsotopeNumber)
   }
 
   # Assert that the charge is in range 1:3
-  if (!is.integer(Charges) || min(Charges) < 1 || max(Charges) > 3) {
+  if (!is.numeric(Charges) || min(Charges) < 1 || max(Charges) > 3) {
     stop("The range of charge values must be a vector of integers between 1 and 3.")
+  } else {
+    Charges <- floor(Charges)
   }
 
   # Assert that messages is TRUE/FALSE
@@ -146,7 +150,7 @@ get_xic <- function(ScanMetadata,
     XIC_Traces <- do.call(rbind, lapply(1:length(XICread), function(el) {
 
       # If no intensity, return NULL
-      if (is.null(XICread[[el]]$intensities)) {return(NULL)}
+      #if (is.null(XICread[[el]]$intensities)) {return(NULL)}
 
       # Pull chromatogram
       Chromatogram <- data.table::data.table(

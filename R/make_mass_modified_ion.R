@@ -39,7 +39,7 @@ make_mass_modified_ion <- function(Ion,
 
   # Assert that symbol is an acceptable input
   if (!is.character(Symbol) | all(unique(Symbol) %in% c("+", "++", "-", "--", "^", "^^")) == FALSE) {
-    stop("Symbol must be any combination of +, ++, -, --, ^, or ^^.")
+    stop("Symbol must be any combination of +, ++, -, --, ^, or ^^")
   }
 
   # Assert that AMU Change is a nonzero numeric

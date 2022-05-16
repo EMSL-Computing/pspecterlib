@@ -80,7 +80,7 @@ scan_metadata_plot <- function(ScanMetadata,
   # Ensure ScanNumFilter includes two values within the min and max scan number
   if (is.null(ScanNumFilter) == F) {
       if (length(ScanNumFilter) != 2 || ScanNumFilter[1] > ScanNumFilter[2]) {
-        stop("Scan Number Filter must contain 2 values: a min and a max scan number. Example: c(34000, 34500)")}
+        stop("Scan Number Filter must contain 2 values: a min and a max scan number in order from smallest to largest.")}
   }
 
   ###################
@@ -100,7 +100,11 @@ scan_metadata_plot <- function(ScanMetadata,
   Y <- scan[[YVar]]
 
   # Label will be a factor variable if it's not score or q-value
-  if (LabVar %in% c("Score", "Q Value")) {Label <- as.numeric(scan[[LabVar]])} else{Label <- as.factor(scan[[LabVar]])}
+  if (LabVar %in% c("Score", "Q Value")) {
+    Label <- as.numeric(scan[[LabVar]])
+  } else{
+    Label <- as.factor(scan[[LabVar]])
+  }
 
   # Generate plotting data frame
   DF <- data.frame(X, Y, Label)

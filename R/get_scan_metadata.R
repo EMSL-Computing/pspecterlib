@@ -36,6 +36,8 @@
 #' \tab \cr
 #' Decoy \tab A logical (TRUE/FALSE/NA) indicating whether the identified protein is a protein decoy or not. \cr
 #' \tab \cr
+#' Modifications \tab A string indicating whether a modification was identified or not. The format is "Name@@Position=MW & Name2@@Position2=MW2" etc \cr
+#' \tab \cr
 #' }
 #'
 #'
@@ -211,22 +213,12 @@ get_scan_metadata <- function(MSPath,
   # does not exist or is not an mzid.
   if (is.null(IDPath) || file.exists(IDPath) == FALSE || grepl(".mzid", IDPath) == F) {
 
-    # Send warning if file is not NULL
-    if (is.null(IDPath) == F) {
-
-      # Send a warning if the file was not found
-      if (file.exists(IDPath) == FALSE) {warning("ID file does not exist.")}
-
-      # Send a warning if the file was not an mzid
-      if (grepl(".mzid", IDPath) == F) {warning("ID file must be an mzid file.")}
-
-    }
-
     # Add empty ID columns to ScanMetadata
     ScanMetadata$Sequence <- ScanMetadata$`Protein ID` <- ScanMetadata$`Calculated Mass` <- NA
     ScanMetadata$`Experimental Mass` <- ScanMetadata$Score <- NA
     ScanMetadata$`Q Value` <- ScanMetadata$Decoy <- ScanMetadata$Description <- NA
     ScanMetadata$`Peptide Start Position` <- NA
+    ScanMetadata$Modifications <- NA
 
     # Order ScanMetadata with MS2 first, followed by MS1
     ScanMetadata <- ScanMetadata[order(-ScanMetadata$`MS Level`),]
@@ -239,35 +231,36 @@ get_scan_metadata <- function(MSPath,
     PSMS <- ID %>% mzR::psms() %>% data.table::data.table()
     Score <- NULL
 
-    # Try to pull Score Data, and if it doesn't work, extract the text
-    tryCatch({
+    # Try to pull Score Data, and if it doesn't work, extract the text. Note: will add back
+    # in when I have a tangible, shareable example.
+    #tryCatch({
       Score <- ID %>% mzR::score() %>% data.table::data.table()
-    },
+    #},
 
-    error = function(e) {
+    #error = function(e) {
 
       # Read mzid file as a text file
-      suppressWarnings({textID <- readLines(IDPath)})
+    #  suppressWarnings({textID <- readLines(IDPath)})
 
       # Grab Spec E Value and Q Value
-      EV <- QV <- c()
-      for (line in textID) {
-        if (grepl("SpecEValue", line)) {
-          splitLine <- unlist(strsplit(line, " |=|\""))
-          EV <- c(EV, as.numeric(splitLine[grep("value", splitLine) + 2]))
-        } else if (grepl(":QValue", line)) {
-          splitLine <- unlist(strsplit(line, " |=|\""))
-          QV <- c(QV, as.numeric(splitLine[grep("value", splitLine) + 2]))
-        }
-      }
+    # EV <- QV <- c()
+    # for (line in textID) {
+    #   if (grepl("SpecEValue", line)) {
+    #     splitLine <- unlist(strsplit(line, " |=|\""))
+    #     EV <- c(EV, as.numeric(splitLine[grep("value", splitLine) + 2]))
+    #   } else if (grepl(":QValue", line)) {
+    #     splitLine <- unlist(strsplit(line, " |=|\""))
+    #     QV <- c(QV, as.numeric(splitLine[grep("value", splitLine) + 2]))
+    #   }
+    # }
 
-      # Make Score DataTable
-      Score <<- data.table::data.table(
-        "MS.GF.SpecEValue" = EV %>% as.numeric(),
-        "MS.GF.QValue" = QV
-      )
+    # # Make Score DataTable
+    # Score <<- data.table::data.table(
+    #   "MS.GF.SpecEValue" = EV %>% as.numeric(),
+    #   "MS.GF.QValue" = QV
+    # )
 
-    })
+    #})
 
     # Q Value should be converted to NA if NULL
     if (is.null(Score$MS.GF.QValue)) {Score$MS.GF.QValue <- NA}
@@ -285,6 +278,21 @@ get_scan_metadata <- function(MSPath,
       "Description" = PSMS$DatabaseDescription,
       "Peptide Start Position" = PSMS$start
     )
+
+    # Pull and format modification data to be scan number and "Name@Position=MW & Name2@Position2=MW2" etc
+    AllMods <- mzR::modifications(ID) %>%
+      dplyr::mutate(
+        `Scan Number` = lapply(spectrumID, function(x) {strsplit(x, "scan=") %>% unlist() %>% tail(1) }) %>% unlist() %>% as.numeric(),
+        Modifications = paste0(name, "@", location, "=", round(mass, 6))
+      ) %>%
+      dplyr::select(c(`Scan Number`, Modifications)) %>%
+      dplyr::group_by(`Scan Number`) %>%
+      dplyr::summarise(Modifications = paste(Modifications, collapse = " & "))
+
+    # Merge all Mods to ID data
+    if (nrow(AllMods) > 0) {
+      IDData <- merge(IDData, AllMods, by = "Scan Number", all = TRUE)
+    }
 
     # Merge ScanMetdata and IDData
     ScanMetadata <- merge(ScanMetadata, IDData, by = "Scan Number", all = TRUE)

@@ -19,9 +19,9 @@
 #' \tab \cr
 #' Number of Peptides \tab The count of peptides identified for that protein. \cr
 #' \tab \cr
-#' Average Q Value \tab The mean Q Value for the peptides identified for that protein. \cr
+#' Median Q Value \tab The median Q Value for the peptides identified for that protein. \cr
 #' \tab \cr
-#' Average Score \tab The mean score for the peptides identified for that protein. \cr
+#' Median Score \tab The median score for the peptides identified for that protein. \cr
 #' \tab \cr
 #' Description \tab The protein's description as provided in the ID file. \cr
 #' \tab \cr
@@ -85,6 +85,11 @@ get_protein_table <- function(ScanMetadata,
     }
   }
 
+  # Remove Contaminants must be a true or false
+  if (is.na(RemoveContaminants) || is.logical(RemoveContaminants) == FALSE || length(RemoveContaminants) > 1) {
+    stop("RemoveContaminants must be a TRUE or FALSE.")
+  }
+
   #####################
   ## READ FASTA FILE ##
   #####################
@@ -136,8 +141,8 @@ get_protein_table <- function(ScanMetadata,
     tidyr::nest() %>%
     dplyr::mutate(
       "Number of Peptides" = purrr::map(data, function(x) {nrow(x)}) %>% unlist(),
-      "Average Q Value" = purrr::map(data, function(x) {x$`Q Value` %>% mean()}) %>% unlist(),
-      "Average Score" = purrr::map(data, function(x) {x$Score %>% mean()}) %>% unlist(),
+      "Median Q Value" = purrr::map(data, function(x) {x$`Q Value` %>% median(na.rm = T)}) %>% unlist(),
+      "Median Score" = purrr::map(data, function(x) {x$Score %>% median(na.rm = T)}) %>% unlist(),
       "Description" = purrr::map(data, function(x) {x$Description[1]}) %>% unlist(),
       "Literature Sequence" = purrr::map(Protein, function(x) {FASTA[[Protein]][[1]]})
     ) %>%

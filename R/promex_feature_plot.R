@@ -48,6 +48,7 @@ promex_feature_plot <- function(MS1FT,
   if (is.logical(Interactive) == FALSE || length(Interactive) > 1) {
     stop("Interactive needs to be a single logical: a TRUE or FALSE.")
   }
+  if (is.na(Interactive)) {Interactive <- FALSE}
 
   ###################
   ## GENERATE PLOT ##
@@ -79,5 +80,10 @@ promex_feature_plot <- function(MS1FT,
                                    midpoint = median(ProMexDF$`Log10 Abundance`))
 
   # Return interactive or not
-  if (Interactive) {ProMexPlot %>% plotly::ggplotly()} else {ProMexPlot}
+  if (Interactive) {
+    ProMexPlot %>% plotly::ggplotly()
+  } else {
+    ProMexPlot
+  }
+
 }

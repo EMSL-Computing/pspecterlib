@@ -16,9 +16,6 @@ Imports:
     rhdf5,
     mzR,
     MSnbase,
-    rawrr,
-    BRAIN,
-    Rdisop,
     lsa,
     seqinr,
     dplyr,
@@ -34,9 +31,10 @@ Imports:
     htmltools,
     RColorBrewer
 Suggests: 
+    rawrr,
     rmarkdown,
     knitr
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 Encoding: UTF-8
 NeedsCompilation: yes
 Packaged: 2021-06-10 19:39:08 UTC; degn400

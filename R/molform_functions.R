@@ -421,8 +421,9 @@ calculate_iso_profile <- function(molform, min_abundance = 0.1) {
     dplyr::ungroup() %>%
     dplyr::select(-massbin) %>%
     dplyr::mutate(
-      isotope = paste("M+", 0:(nrow(.)-1), sep = ""),
-      isotope = ifelse(isotope == "M+0", "M", isotope)
+      isotope = 0:(nrow(.)-1),
+      isolabel = paste("M+", isotope, sep = ""),
+      isolabel = ifelse(isolabel == "M+0", "M", isolabel)
     )
   
   class(IsoProfile) <- c(class(IsoProfile), "isoprofile")

@@ -194,7 +194,7 @@ multiply_molforms <- function(molform, scalar) {
 #' 
 #' }
 #' @export
-getAAMolForm <- function(sequence) {
+get_aa_molform <- function(sequence) {
   
   ##################
   ## CHECK INPUTS ##
@@ -380,7 +380,7 @@ RelativeAbundances <- data.frame(
 #' 
 #' }
 #' @export
-calcIsoProfile <- function(molform, min_abundance = 0.1) {
+calculate_iso_profile <- function(molform, min_abundance = 0.1) {
   
   ##################
   ## CHECK INPUTS ##

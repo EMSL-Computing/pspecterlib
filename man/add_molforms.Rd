@@ -7,7 +7,7 @@
 add_molforms(..., CapNegatives = TRUE)
 }
 \arguments{
-\item{...}{Any number of molecules from the as.molform class}
+\item{...}{Any number of molform objects from as.molform.}
 
 \item{CapNegatives}{A TRUE/FALSE to indicate whether negative elements should be
 capped at 0. Useful for modifications where elements are lost. Default is TRUE.}
@@ -18,7 +18,7 @@ Add molform objects together
 \examples{
 \dontrun{
 
-add_molforms(as.molform("C6H12O6"), as.molform("H2Fr2Sr2Ar5"), as.molform("H-1C-2"))
+add_molforms(as.molform("C6H12O6"), as.molform("H2K2F2Na5"), as.molform("H-1C-2"))
 
 }
 }

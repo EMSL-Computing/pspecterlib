@@ -29,7 +29,8 @@ Imports:
     purrr,
     tidyr,
     htmltools,
-    RColorBrewer
+    RColorBrewer,
+    isopat
 Suggests: 
     rawrr,
     rmarkdown,
@@ -37,6 +38,6 @@ Suggests:
 RoxygenNote: 7.2.1
 Encoding: UTF-8
 NeedsCompilation: yes
-Packaged: 2021-06-10 19:39:08 UTC; degn400
+Packaged: 2022-08-04 19:39:08 UTC
 Author: David Degnan [aut, cre]
 Maintainer: David Degnan <david.degnan@pnnl.gov>

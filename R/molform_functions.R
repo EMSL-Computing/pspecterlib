@@ -104,7 +104,7 @@ MolFormDict <- list(
 #' 
 #' @description Add molform objects together
 #' 
-#' @param ... Any number of molecules written as strings like "C6H12O6".
+#' @param ... Any number of molform objects from as.molform. 
 #' @param CapNegatives A TRUE/FALSE to indicate whether negative elements should be
 #'     capped at 0. Useful for modifications where elements are lost. Default is TRUE.
 #' 
@@ -366,14 +366,65 @@ RelativeAbundances <- data.frame(
                 100, 0.0055, 0.72, 99.2745) / 100
 )
 
-
-test <- isopat::isopattern(RelativeAbundances, "C6H12O6", 0.01) %>%
-  data.table::data.table() %>%
-  dplyr::select(mass, abundance) %>%
-  dplyr::mutate(abundance = abundance / max(abundance) * 100)
-
-
-
+#' Calculate an isotope profile using isopat
+#' 
+#' @description Generates an isotope profile using [isopat](https://github.com/cran/isopat)
+#' 
+#' @param molform An object of the as.molform class
+#' @param min_abundance Minimum abundance for calculating isotopes. Default is 0.1. 
+#' 
+#' @examples
+#' \dontrun{
+#' 
+#' calcIsoProfile(molform = as.molform("C6H12O6"), min_abundance = 0.1)
+#' 
+#' }
+#' @export
+calcIsoProfile <- function(molform, min_abundance = 0.1) {
   
+  ##################
+  ## CHECK INPUTS ##
+  ##################
+  
+  # Molform should be an object of the molform class
+  if (!inherits(molform, "molform")) {
+    stop("molform should be an object from the molform class.")
+  }
+  
+  # Min abundance should be a numeric between 0 and 100 
+  if (!is.numeric(min_abundance) | length(min_abundance) != 1) {
+    stop("min_abundance should be a single numeric.")
+  }
+  if (min_abundance < 0 | min_abundance > 100) {
+    stop("The range of min_abundance is between 0 and 100.")
+  }
+  
+  ###############################
+  ## CALCULATE ISOTOPE PROFILE ##
+  ###############################
+  
+  # Collapse the molform
+  Cleaned <- molform[molform > 0]
+  if (length(Cleaned) == 0) {return(NULL)}
+  Cleaned <- paste0(names(Cleaned), Cleaned, collapse = "")
+  
+  # Calculate isotope profile 
+  IsoProfile <- isopat::isopattern(RelativeAbundances, Cleaned, min_abundance/10) %>%
+    data.table::data.table() %>%
+    dplyr::select(mass, abundance) %>%
+    dplyr::mutate(
+      abundance = abundance / max(abundance) * 100,
+      massbin = round(mass)
+    ) %>%
+    dplyr::group_by(massbin) %>%
+    dplyr::filter(abundance == max(abundance) & abundance > min_abundance) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-massbin)
+  
+  class(IsoProfile) <- c(class(IsoProfile), "isoprofile")
+  
+  return(IsoProfile)
+
+}
 
 

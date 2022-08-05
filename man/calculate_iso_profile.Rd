@@ -17,7 +17,7 @@ Generates an isotope profile using [isopat](https://github.com/cran/isopat)
 \examples{
 \dontrun{
 
-calcIsoProfile(molform = as.molform("C6H12O6"), min_abundance = 0.1)
+calculate_iso_profile(molform = as.molform("C6H12O6"), min_abundance = 0.1)
 
 }
 }

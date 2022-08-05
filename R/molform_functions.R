@@ -190,7 +190,7 @@ multiply_molforms <- function(molform, scalar) {
 #' @examples 
 #' \dontrun{
 #' 
-#' getAAMolForm("TESTTESTTESTTEST")
+#' get_aa_molform("TESTTESTTESTTEST")
 #' 
 #' }
 #' @export
@@ -376,7 +376,7 @@ RelativeAbundances <- data.frame(
 #' @examples
 #' \dontrun{
 #' 
-#' calcIsoProfile(molform = as.molform("C6H12O6"), min_abundance = 0.1)
+#' calculate_iso_profile(molform = as.molform("C6H12O6"), min_abundance = 0.1)
 #' 
 #' }
 #' @export
@@ -419,7 +419,11 @@ calculate_iso_profile <- function(molform, min_abundance = 0.1) {
     dplyr::group_by(massbin) %>%
     dplyr::filter(abundance == max(abundance) & abundance > min_abundance) %>%
     dplyr::ungroup() %>%
-    dplyr::select(-massbin)
+    dplyr::select(-massbin) %>%
+    dplyr::mutate(
+      isotope = paste("M+", 0:(nrow(.)-1), sep = ""),
+      isotope = ifelse(isotope == "M+0", "M", isotope)
+    )
   
   class(IsoProfile) <- c(class(IsoProfile), "isoprofile")
   

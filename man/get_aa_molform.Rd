@@ -15,7 +15,7 @@ Calculate a molecular formula for an amino acid sequence
 \examples{
 \dontrun{
 
-getAAMolForm("TESTTESTTESTTEST")
+get_aa_molform("TESTTESTTESTTEST")
 
 }
 }

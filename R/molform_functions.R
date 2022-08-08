@@ -409,7 +409,7 @@ calculate_iso_profile <- function(molform, min_abundance = 0.1) {
   Cleaned <- paste0(names(Cleaned), Cleaned, collapse = "")
   
   # Calculate isotope profile 
-  IsoProfile <- isopat::isopattern(RelativeAbundances, Cleaned, min_abundance/10) %>%
+  IsoProfile <- isopat::isopattern(RelativeAbundances, Cleaned, 1e-8) %>%
     data.table::data.table() %>%
     dplyr::select(mass, abundance) %>%
     dplyr::mutate(

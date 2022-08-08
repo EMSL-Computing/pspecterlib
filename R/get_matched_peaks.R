@@ -12,9 +12,7 @@
 #'    is c("a", "b", "c", "x", "y", "z"). Required.
 #' @param CalculateIsotopes A logical which indicates whether isotopes should be calculated.
 #'    FALSE = Faster Calculations. Default is TRUE. Required.
-#' @param IsotopicPercentage The minimum value of the relative reference abundance to search
-#'    for relevant isotopes, For proteomics data, 10% is generally viewed as an acceptable
-#'    cutoff. Default is 10. The range of acceptable values is 0-100. Default is 0.
+#' @param MinAbundance Minimum abundance for calculating isotopes. Default is 0.1.
 #' @param CorrelationScore A minimum correlation score to filter isotopes by. Range is 0 to 1.
 #'    Default is 0. There is a 3 peak minimum to calculate a correlation score. Required.
 #' @param AlternativeIonGroups A "modified_ion" object from "make_mass_modified ions." Default is NULL.
@@ -100,7 +98,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                               PPMThreshold = 10,
                               IonGroups = c("a", "b", "c", "x", "y", "z"),
                               CalculateIsotopes = TRUE,
-                              IsotopicPercentage = 10,
+                              MinimumAbundance = 0.1,
                               CorrelationScore = 0,
                               AlternativeIonGroups = NULL,
                               PTMs = NULL,
@@ -112,7 +110,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     PPMThreshold = PPMThreshold,
     IonGroups = IonGroups,
     CalculateIsotopes = CalculateIsotopes,
-    IsotopicPercentage = IsotopicPercentage,
+    MinimumAbundance = MinimumAbundance,
     CorrelationScore = CorrelationScore,
     AlternativeIonGroups = AlternativeIonGroups,
     PTMs = PTMs,
@@ -126,7 +124,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                                PPMThreshold,
                                IonGroups,
                                CalculateIsotopes,
-                               IsotopicPercentage,
+                               MinimumAbundance,
                                CorrelationScore,
                                AlternativeIonGroups,
                                PTMs,
@@ -181,17 +179,17 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     stop("CalculateIsotopes must be a single logical value TRUE or FALSE.")
   }
 
-  # Assert that Isotopic Percentage is a single number
-  if (is.numeric(IsotopicPercentage) == FALSE || length(IsotopicPercentage) > 1) {
-    stop("IsotopicPercentage must be a single numeric value. For example, 10.")
+  # Assert that Minimum Abundance is a single number
+  if (is.numeric(MinimumAbundance) == FALSE || length(MinimumAbundance) > 1) {
+    stop("MinimumAbundance must be a single numeric value. For example, 0.1.")
   }
 
-  # Convert Isotopic Percentage to a positive number
-  IsotopicPercentage <- abs(IsotopicPercentage)
+  # Convert MinimumAbundance to a positive number
+  MinimumAbundance <- abs(MinimumAbundance)
 
-  # Assert that Isotopic Percentage is in the range of 0 and 100
-  if (IsotopicPercentage > 100) {
-    stop("IsotopicPercentage must be between 0 and 100.")
+  # Assert that MinimumAbundance is in the range of 0 and 100
+  if (MinimumAbundance > 100) {
+    stop("MinimumAbundance must be between 0 and 100.")
   }
 
   # Assert that the Correlation Score is a single number
@@ -256,6 +254,8 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   ## 0. DEFINE FUNCTION TO REMOVE EXTRANEOUS PEAK MATCHING OPTIONS ##
   ###################################################################
 
+  browser()
+  
   # First, take the minimum PPM spacing in peak data
   PeakSpacing <- (PeakData$`M/Z` - dplyr::lag(PeakData$`M/Z`, default = dplyr::first(PeakData$`M/Z`))) /
     (dplyr::lag(PeakData$`M/Z`, default = dplyr::first(PeakData$`M/Z`))) * 1e6

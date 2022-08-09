@@ -10,7 +10,7 @@ get_matched_peaks(
   PPMThreshold = 10,
   IonGroups = c("a", "b", "c", "x", "y", "z"),
   CalculateIsotopes = TRUE,
-  IsotopicPercentage = 10,
+  MinimumAbundance = 0.1,
   CorrelationScore = 0,
   AlternativeIonGroups = NULL,
   PTMs = NULL,
@@ -32,16 +32,14 @@ is c("a", "b", "c", "x", "y", "z"). Required.}
 \item{CalculateIsotopes}{A logical which indicates whether isotopes should be calculated.
 FALSE = Faster Calculations. Default is TRUE. Required.}
 
-\item{IsotopicPercentage}{The minimum value of the relative reference abundance to search
-for relevant isotopes, For proteomics data, 10% is generally viewed as an acceptable
-cutoff. Default is 10. The range of acceptable values is 0-100. Default is 0.}
-
 \item{CorrelationScore}{A minimum correlation score to filter isotopes by. Range is 0 to 1.
 Default is 0. There is a 3 peak minimum to calculate a correlation score. Required.}
 
 \item{AlternativeIonGroups}{A "modified_ion" object from "make_mass_modified ions." Default is NULL.}
 
 \item{PTMs}{A modifications_pspecter object to test modified sequences. Default is NULL.}
+
+\item{MinAbundance}{Minimum abundance for calculating isotopes. Default is 0.1.}
 }
 \description{
 Returns the "matched_peaks" object with experimental spectrum

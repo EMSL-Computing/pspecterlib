@@ -571,8 +571,9 @@ calculate_iso_profile <- function(molform, min_abundance = 1, limit = 0.1) {
 #' @details The output will either be a "TRUE" acceptable sequence, or "FALSE"
 #'    unacceptable sequence. An acceptable sequence cannot be NULL,
 #'    will not have any spaces or non-letter characters, will be longer than 1
-#'    amino acid, and will not contain the letters B, J, O, U, X, or Z. Modification
-#'    notation (i.e. "TES[Acetyl]T") is not accepted. Modifications should be of the
+#'    amino acid, and will not contain the letters B, J, O, U, X, or Z. Proforma
+#'    notation (i.e. "TES[Acetyl]T") is not accepted, though you can convert the 
+#'    proforma string to a sequence with convert_proforma. Modifications should be of the
 #'    pspecter_ptm class as defined by the "make_ptm" class and can be applied to
 #'    the get_matched_peaks algorithm.
 #'
@@ -626,4 +627,102 @@ is_sequence <- function(Sequence) {
   
 }
 
+#' Convert a proforma string to a PTM object
+#' 
+#' @description Converts proforma strings to a PTM object that get_matched_peaks uses
+#'     to calculate fragmentation patterns  
+#' 
+#' @param proforma A string written in the format "M.S`[`Methyl`]`S`[`22`]`S`[`23`]`.V"
+#' 
+#' @examples
+#' \dontrun {
+#' 
+#' convert_proforma("M.(S)[Acetyl]ATNNIAQARKLVEQLRIEAGIERIKVSKAASDLMSYCEQHARNDPLLVGVPASENPFKDK(KPCIIL)[-52.9879].")
+#'
+#' convert_proforma("M.SS[Methyl]S.V", "M.S[Methyl]S[22]S[23].V"))
+#' 
+#' convert_proforma("TESTTESTTEST")
+#' 
+#' }
+#' @export
+convert_proform <- function(Name,
+                     AMU_Change,
+                     N_Position,
+                     Molecular_Formula = NULL) {
+  
+  ##################
+  ## CHECK INPUTS ##
+  ##################
+  
+  # Assert that Names is a vector of characters
+  if (is.null(Name) || !is.character(Name)) {
+    stop("Name must be a vector of strings describing each modification.")
+  }
+  
+  # Assert that AMU_Change is a vector of masses
+  if (is.null(AMU_Change) || !is.numeric(AMU_Change)) {
+    stop("AMU_Change must be a vector of masses written as a numeric.")
+  }
+  
+  # Assert that N_Position is a vector integers
+  if (is.null(N_Position) || !is.numeric(N_Position)) {
+    stop("N_Position should be a vector of integers.")
+  }
+  
+  # Make N_Position a vector of integers
+  N_Position <- N_Position %>% abs() %>% round()
+  
+  # Assert that the three vectors are of the same length
+  if (length(Name) != length(AMU_Change) | length(Name) != length(N_Position)) {
+    stop("The length of Names, AMU_Change, and N_Position must be the same.")
+  }
+  
+  # Run additional checks if Molecular_Formula is not NULL
+  if (is.null(Molecular_Formula) == FALSE) {
+    
+    # Assert that the length is the same
+    if (length(Name) != length(Molecular_Formula)) {
+      stop("Molecular_Formula must be the same length as Names, AMU_Change, and N_Position.")
+    }
+    
+  }
+  
+  ######################
+  ## BUILD THE OBJECT ##
+  ######################
+  
+  # Build modification data table
+  PTM <- data.table::data.table(
+    "Name" = Name,
+    "AMU Change" = AMU_Change,
+    "N Position" = N_Position
+  )
+  
+  
+  # If Molecular_Formula is not NULL
+  if (is.null(Molecular_Formula) == FALSE) {
+    
+    # Get molecular formula objects
+    MolForms <- lapply(1:length(Molecular_Formula), function(el) {
+      make_molecule(Molecular_Formula[[el]])
+    })
+    
+    # Add names
+    names(MolForms) <- Name
+    
+    # Add attribute
+    attr(PTM, "pspecter")$MolForms <- MolForms
+    
+    # Add molecular formula to the dataframe
+    PTM$`Molecular Formula` <- lapply(1:length(MolForms), function(el) {unlist(MolForms[[el]][1, "Formula"])}) %>% unlist()
+    
+  }
+  
+  # Add class
+  class(PTM) <- c(class(PTM), "modifications_pspecter")
+  
+  # Return results
+  return(PTM)
+  
+}
 

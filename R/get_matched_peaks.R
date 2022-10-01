@@ -4,9 +4,9 @@
 #'    annotated with matches to calculated fragments.
 #'
 #' @param ScanMetadata  Object of the scan_metadata class from get_scan_metadata. Required,
-#'    unless an alternative spectrum, sequence, and charge is provided (not recommended for beginners).
+#'    unless an alternative spectrum, sequence, and charge is provided.
 #' @param PeakData Object of the peak_data class from get_peak_data. Required,
-#'    unless an alternative spectrum, sequence, and charge is provided (not recommended for beginners).
+#'    unless an alternative spectrum, sequence, and charge is provided.
 #' @param PPMThreshold The ppm error threshold between calculated fragments. Default is 10. Required.
 #' @param IonGroups Determine which ion types to calculate. a, b, c, x, y, z are supported. Default
 #'    is c("a", "b", "c", "x", "y", "z"). Required.
@@ -16,7 +16,12 @@
 #' @param CorrelationScore A minimum correlation score to filter isotopes by. Range is 0 to 1.
 #'    Default is 0. There is a 3 peak minimum to calculate a correlation score. Required.
 #' @param AlternativeIonGroups A "modified_ion" object from "make_mass_modified ions." Default is NULL.
-#' @param PTMs A modifications_pspecter object to test modified sequences. Default is NULL.
+#' @param AlternativeSequence A proforma-acceptable string to calculate the literature 
+#'    fragments. The default is the sequence matched in the ScanMetadata file. Default is NULL.
+#' @param AlternativeSpectrum An alternative "peak_data" spectrum to use instead of the default 
+#'     PeakData. Mostly used by other packages. Default is NULL.
+#' @param AlternativeCharge A different charge value to test besides the one in the PeakData 
+#'     spectrum. 
 #'
 #' @details
 #' The data.table outputted by this function contains 17 columns.
@@ -101,6 +106,9 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                               MinimumAbundance = 1,
                               CorrelationScore = 0,
                               AlternativeIonGroups = NULL,
+                              AlternativeSequence = NULL,
+                              AlternativeSpectrum = NULL,
+                              AlternativeCharge = NULL,
                               PTMs = NULL,
                               ...) {
 
@@ -113,6 +121,9 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     MinimumAbundance = MinimumAbundance,
     CorrelationScore = CorrelationScore,
     AlternativeIonGroups = AlternativeIonGroups,
+    AlternativeSequence = AlternativeSequence,
+    AlternativeSpectrum = AlternativeSpectrum,
+    AlternativeCharge = AlternativeCharge,
     PTMs = PTMs,
     ...
   )

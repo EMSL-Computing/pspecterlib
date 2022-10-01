@@ -98,7 +98,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                               PPMThreshold = 10,
                               IonGroups = c("a", "b", "c", "x", "y", "z"),
                               CalculateIsotopes = TRUE,
-                              MinimumAbundance = 0.1,
+                              MinimumAbundance = 1,
                               CorrelationScore = 0,
                               AlternativeIonGroups = NULL,
                               PTMs = NULL,
@@ -287,21 +287,21 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       dplyr::select(-c(`PPM Low`, `PPM High`, Within))
     
     # Second take the minimum charge peak within each ppm bin to prioritize smaller charges. 
-    BinVal <- 0 # This is to count bins
-    Fragments <- Fragments %>%
-      dplyr::arrange(`M/Z`) %>%
-      dplyr::mutate(
-        PPM = (`M/Z` - dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) / (dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) * 1e6,
-        Flag = PPM < PPMBinSize,
-        Bin = lapply(Flag, function(Flag) {
-          if (Flag == FALSE) {BinVal <<- BinVal + 1}
-          BinVal
-        }) %>% unlist()
-      ) %>%
-      dplyr::group_by(Bin) %>%
-      dplyr::slice(which.min(Z)) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(-c(PPM, Flag, Bin))
+    # BinVal <- 0 # This is to count bins
+    # Fragments <- Fragments %>%
+    #   dplyr::arrange(`M/Z`) %>%
+    #   dplyr::mutate(
+    #     PPM = (`M/Z` - dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) / (dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) * 1e6,
+    #     Flag = PPM < PPMBinSize,
+    #     Bin = lapply(Flag, function(Flag) {
+    #       if (Flag == FALSE) {BinVal <<- BinVal + 1}
+    #       BinVal
+    #     }) %>% unlist()
+    #   ) %>%
+    #   dplyr::group_by(Bin) %>%
+    #   dplyr::slice(which.min(Z)) %>%
+    #   dplyr::ungroup() %>%
+    #   dplyr::select(-c(PPM, Flag, Bin))
     
     return(Fragments)
     
@@ -482,7 +482,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       # Add to mass
       for (ModName in ModNames) {
         # Add modifications as we do in proteomatch 
-        browser()
         Atoms <- add_molforms(Atoms, molform)
       }
     }
@@ -533,13 +532,14 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       
       # Get Isotope Relative Abundances
       IsotopeResults <- calculate_iso_profile(as.molform(MolForm), min_abundance = MinimumAbundance)
+      IsotopeResults$`Molecular Formula` = MolForm
+      return(IsotopeResults)
       
     }))
     
     # Rename the rows of the isotope list
-    colnames(IsotopeList) <- c("M/Z", "")
-
-    browser()
+    IsotopeList <- IsotopeList %>% dplyr::select(-isotope)
+    colnames(IsotopeList) <- c("M/Z", "Isotopic Percentage", "Isotope", "Molecular Formula")
     
     # Filter out all monoiosotopic peaks
     IsotopeListFilter <- IsotopeList %>% dplyr::filter(Isotope != "M")
@@ -567,16 +567,13 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
       # Bind to fragments
       Fragments <- rbind(Fragments, IsoFragments)
+      
+      # Fill in isotopic percentages
+      Fragments <- merge(Fragments  %>% dplyr::select(-`Isotopic Percentage`), 
+                         IsotopeList[,c("Molecular Formula", "Isotope", "Isotopic Percentage")], 
+                         by = c("Molecular Formula", "Isotope"))
+    
 
-      # Remove isotopic percentage
-      Fragments <- Fragments %>% dplyr::select(-`Isotopic Percentage`)
-
-      # Add actual isotopic percentage values
-      Fragments <- merge(Fragments, IsotopeList, by = c("Molecular Formula", "Isotope")) %>%
-        dplyr::arrange(`M/Z`)
-
-      # Clean up fragments
-      Fragments <- cleanCalculatedFragments(Fragments)
     }
 
   }
@@ -709,7 +706,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   attr(Fragments, "pspecter")$PPMThreshold <- PPMThreshold
   attr(Fragments, "pspecter")$IonGroups <- IonGroups
   attr(Fragments, "pspecter")$IsotopesIncluded <- CalculateIsotopes
-  attr(Fragments, "pspecter")$IsotopicPercentageFilter <- IsotopicPercentage
+  attr(Fragments, "pspecter")$MinimumAbundance <- MinimumAbundance
   attr(Fragments, "pspecter")$CorrelationScoreFilter <- CorrelationScore
 
   # Add mass modified ions and PTMs if they are not NULL

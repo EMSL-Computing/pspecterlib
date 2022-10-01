@@ -509,11 +509,11 @@ RelativeAbundances <- data.frame(
 #' @examples
 #' \dontrun{
 #' 
-#' calculate_iso_profile(molform = as.molform("C6H12O6"), min_abundance = 0.1)
+#' calculate_iso_profile(molform = as.molform("C6H12O6"), min_abundance = 1)
 #' 
 #' }
 #' @export
-calculate_iso_profile <- function(molform, min_abundance = 0.1, limit = 0.1) {
+calculate_iso_profile <- function(molform, min_abundance = 1, limit = 0.1) {
   
   ##################
   ## CHECK INPUTS ##

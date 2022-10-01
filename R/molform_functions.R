@@ -76,6 +76,35 @@ as.molform <- function(MolForm) {
   
 }    
 
+#' Collapse a molform object to a simple molecular formula
+#' 
+#' @description A simple printing option for an object of the as.molform class. 
+#' 
+#' @examples
+#' \dontrun{
+#' print(as.molform("C6H12O6"))
+#' }
+#' @export
+collapse_molform <- function(molform) {
+  
+  ###################
+  ## CHECK INPUTS ##
+  ##################
+  
+  # Molform should be an object of the molform class
+  if (!inherits(molform, "molform")) {
+    stop("molform should be an object from the molform class.")
+  }
+  
+  ######################
+  ## COLLAPSE MOLFORM ##
+  ######################
+  
+  collapsed <- molform[molform != 0]
+  return(paste0(names(collapsed), collapsed, sep = "", collapse = ""))
+  
+}
+
 #' Get average mass from the molecular formula 
 #' 
 #' @description Calculate the average mass for a molform object.
@@ -474,7 +503,8 @@ RelativeAbundances <- data.frame(
 #' @description Generates an isotope profile using [isopat](https://github.com/cran/isopat)
 #' 
 #' @param molform An object of the as.molform class
-#' @param min_abundance Minimum abundance for calculating isotopes. Default is 0.1. 
+#' @param min_abundance Minimum abundance for calculating isotopes. Default is 1. 
+#' @param limit See ?isopat::isopattern for more details. 0.1 appears to calculate enough isotopes. 
 #' 
 #' @examples
 #' \dontrun{
@@ -483,7 +513,7 @@ RelativeAbundances <- data.frame(
 #' 
 #' }
 #' @export
-calculate_iso_profile <- function(molform, min_abundance = 0.1) {
+calculate_iso_profile <- function(molform, min_abundance = 0.1, limit = 0.1) {
   
   ##################
   ## CHECK INPUTS ##
@@ -507,12 +537,10 @@ calculate_iso_profile <- function(molform, min_abundance = 0.1) {
   ###############################
   
   # Collapse the molform
-  Cleaned <- molform[molform > 0]
-  if (length(Cleaned) == 0) {return(NULL)}
-  Cleaned <- paste0(names(Cleaned), Cleaned, collapse = "")
+  MolForm <- collapse_molform(molform)
   
   # Calculate isotope profile 
-  IsoProfile <- isopat::isopattern(RelativeAbundances, Cleaned, 1e-4) %>%
+  IsoProfile <- isopat::isopattern(RelativeAbundances, MolForm, limit) %>%
     data.table::data.table() %>%
     dplyr::select(mass, abundance) %>%
     dplyr::mutate(
@@ -528,8 +556,6 @@ calculate_iso_profile <- function(molform, min_abundance = 0.1) {
       isolabel = paste("M+", isotope, sep = ""),
       isolabel = ifelse(isolabel == "M+0", "M", isolabel)
     )
-  
-  class(IsoProfile) <- c(class(IsoProfile), "isoprofile")
   
   return(IsoProfile)
 

@@ -253,8 +253,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   ###################################################################
   ## 0. DEFINE FUNCTION TO REMOVE EXTRANEOUS PEAK MATCHING OPTIONS ##
   ###################################################################
-
-  browser()
   
   # First, take the minimum PPM spacing in peak data
   PeakSpacing <- (PeakData$`M/Z` - dplyr::lag(PeakData$`M/Z`, default = dplyr::first(PeakData$`M/Z`))) /
@@ -267,17 +265,30 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     # First, remove all peaks less than the min peak MZ and more than the max peak MZ
     Fragments <- Fragments %>% dplyr::filter(`M/Z` > min(PeakData$`M/Z`) & `M/Z` < max(PeakData$`M/Z`))
 
-    #  Second, remove charge 1 less than ChargeThresh, and charge 2 less than ChargeThresh2
+    #  Second, remove charge 1 less than the first n positions (ChargeThresh), 
+    #  and charge 2 less than the second n positions (ChargeThresh2)
     toRm <- c(which(Fragments$Z > 1 & Fragments$Position <= ChargeThresh),
               which(Fragments$Z > 2 & Fragments$Position <= ChargeThresh2)) %>%
       unique() %>%
       sort()
     if (length(toRm) > 0) {Fragments <- Fragments[-toRm,]}
 
-    # Then, collapse down peaks to threshold bins, picking the smallest charge
-    BinVal <- 0
-
-    PreSlice <- Fragments %>%
+    
+    # First, remove peaks that would never match 
+    Fragments <- Fragments %>%
+      dplyr::mutate(
+        `PPM High` = Fragments$`M/Z` + (PPMThreshold/1e6 * Fragments$`M/Z`),
+        `PPM Low` =  Fragments$`M/Z` - (PPMThreshold/1e6 * Fragments$`M/Z`),
+        Within = purrr::map2(`PPM Low`, `PPM High`, function(Low, High) {
+          nrow(PeakData[PeakData$`M/Z` >= Low & PeakData$`M/Z` <= High,]) != 0
+        }) %>% unlist()
+      ) %>%
+      dplyr::filter(Within == TRUE) %>%
+      dplyr::select(-c(`PPM Low`, `PPM High`, Within))
+    
+    # Second take the minimum charge peak within each ppm bin to prioritize smaller charges. 
+    BinVal <- 0 # This is to count bins
+    Fragments <- Fragments %>%
       dplyr::arrange(`M/Z`) %>%
       dplyr::mutate(
         PPM = (`M/Z` - dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) / (dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) * 1e6,
@@ -291,7 +302,9 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       dplyr::slice(which.min(Z)) %>%
       dplyr::ungroup() %>%
       dplyr::select(-c(PPM, Flag, Bin))
-
+    
+    return(Fragments)
+    
   }
 
   ##########################
@@ -443,6 +456,12 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   MolFormDF <- Fragments %>%
     dplyr::select(Sequence, Modifications) %>%
     unique()
+  
+  # Remove sequences with a single amino acid
+  MolFormDF <- MolFormDF %>% 
+    dplyr::mutate(Count = nchar(Sequence) > 1) %>% 
+    dplyr::filter(Count) %>% 
+    dplyr::select(-Count)
 
   # Iterate through, getting sequences and modifications and combining them
   MolFormDF$`Molecular Formula` <- lapply(1:nrow(MolFormDF), function(row) {
@@ -452,7 +471,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     Mod <- MolFormDF$Modifications[row]
 
     # Step two: convert sequence to molecule object
-    Atoms <- BRAIN::getAtomsFromSeq(Seq) %>% make_molecule()
+    Atoms <- get_aa_molform(Seq)
 
     # Step three: add mod if it exists
     if (Mod != "") {
@@ -462,7 +481,9 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
       # Add to mass
       for (ModName in ModNames) {
-        Atoms <- add_molecules(Atoms, attr(PTMs, "pspecter")$MolForms[[ModName]])
+        # Add modifications as we do in proteomatch 
+        browser()
+        Atoms <- add_molforms(Atoms, molform)
       }
     }
 
@@ -478,16 +499,18 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     #)
     #Atoms <- add_molecules(Atoms, AccountForIon)
 
-    return(unlist(Atoms[1, "Formula"]))
+    return(collapse_molform(Atoms))
 
   }) %>% unlist()
-
+  
   # Add Molecular Formula
   Fragments <- merge(
     Fragments,
     MolFormDF %>% dplyr::select(Sequence, `Molecular Formula`),
     by = "Sequence"
   )
+  
+  ###########
 
   #######################################
   ## 6. CALCULATE ISOTOPES (OPTIONAL)  ##
@@ -504,31 +527,20 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
     # Get all unique Molecular Formulas
     MolForms <- Fragments$`Molecular Formula` %>% unique()
-
+    
     # Get isotopic distributions
-    IsotopeList <- do.call(rbind, lapply(MolForms, function(MolForm) {
-
+    IsotopeList <- do.call(dplyr::bind_rows, lapply(MolForms, function(MolForm) {
+      
       # Get Isotope Relative Abundances
-      IsotopeResults <- Rdisop::getMolecule(MolForm)
-
-      # Get the exact mass and isotopes forward from that position. Filter out
-      # anything below the Isotopic Percentage. Add the Isotope label (M+n)
-      IsotopeTable <- IsotopeResults$isotope[[1]] %>%
-        t() %>%
-        data.table::data.table() %>%
-        dplyr::rename(`M/Z` = V1, `Intensity` = V2) %>%
-        dplyr::mutate(Intensity = Intensity * 100) %>%
-        dplyr::filter(`M/Z` >= IsotopeResults$exactmass) %>%
-        dplyr::filter(Intensity >= IsotopicPercentage) %>%
-        dplyr::mutate(
-          Isotope = paste0("M+", (1:nrow(.)) - 1),
-          Isotope = ifelse(Isotope == "M+0", "M", Isotope),
-          `Molecular Formula` = MolForm
-        ) %>%
-        dplyr::select(-`M/Z`) %>%
-        dplyr::rename(`Isotopic Percentage` = Intensity)
+      IsotopeResults <- calculate_iso_profile(as.molform(MolForm), min_abundance = MinimumAbundance)
+      
     }))
+    
+    # Rename the rows of the isotope list
+    colnames(IsotopeList) <- c("M/Z", "")
 
+    browser()
+    
     # Filter out all monoiosotopic peaks
     IsotopeListFilter <- IsotopeList %>% dplyr::filter(Isotope != "M")
 

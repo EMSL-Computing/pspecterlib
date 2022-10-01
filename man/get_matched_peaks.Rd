@@ -10,7 +10,7 @@ get_matched_peaks(
   PPMThreshold = 10,
   IonGroups = c("a", "b", "c", "x", "y", "z"),
   CalculateIsotopes = TRUE,
-  MinimumAbundance = 0.1,
+  MinimumAbundance = 1,
   CorrelationScore = 0,
   AlternativeIonGroups = NULL,
   PTMs = NULL,

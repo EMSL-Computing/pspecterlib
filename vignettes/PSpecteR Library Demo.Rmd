@@ -1,7 +1,7 @@
 ---
 title: "PSpecter Library Demo"
 author: "Degnan, David J"
-date: "January 11th, 2022"
+date: "October 1st, 2022"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Bottom_Up_Example}
@@ -146,7 +146,7 @@ options for get_matched_peaks include selecting ions (a-c, x-z), adding a modifi
 alternative sequences, spectrum, or charges. 
 
 ```{r get_matched_peaks}
-BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak)
+BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak, DebugMode = FALSE)
 
 BU_Match %>%
   head() %>%
@@ -212,7 +212,7 @@ each isotope and adjacent charge state. XIC data can be extracted with the `get_
 function and plotted with `xic_plot`. The `get_xic` function returns a xic_pspecter 
 object which tracks inputs in its attributes.
 
-```{r, get xic and xic plot, fig.width = 6}
+```{r, get xic and xic plot, fig.width = 6, message = F, warning = F}
 XIC <- get_xic(BU_ScanMetadata, MZ = 659.8596, RTRange = c(58, 60), IsotopeNumber = 0:3)
 xic_plot(XIC, Smooth = TRUE, Interactive = TRUE)
 ```

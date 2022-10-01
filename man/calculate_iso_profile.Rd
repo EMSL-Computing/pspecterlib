@@ -4,12 +4,14 @@
 \alias{calculate_iso_profile}
 \title{Calculate an isotope profile using isopat}
 \usage{
-calculate_iso_profile(molform, min_abundance = 0.1)
+calculate_iso_profile(molform, min_abundance = 1, limit = 0.1)
 }
 \arguments{
 \item{molform}{An object of the as.molform class}
 
-\item{min_abundance}{Minimum abundance for calculating isotopes. Default is 0.1.}
+\item{min_abundance}{Minimum abundance for calculating isotopes. Default is 1.}
+
+\item{limit}{See ?isopat::isopattern for more details. 0.1 appears to calculate enough isotopes.}
 }
 \description{
 Generates an isotope profile using [isopat](https://github.com/cran/isopat)
@@ -17,7 +19,7 @@ Generates an isotope profile using [isopat](https://github.com/cran/isopat)
 \examples{
 \dontrun{
 
-calculate_iso_profile(molform = as.molform("C6H12O6"), min_abundance = 0.1)
+calculate_iso_profile(molform = as.molform("C6H12O6"), min_abundance = 1)
 
 }
 }

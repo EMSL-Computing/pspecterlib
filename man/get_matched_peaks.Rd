@@ -13,16 +13,19 @@ get_matched_peaks(
   MinimumAbundance = 1,
   CorrelationScore = 0,
   AlternativeIonGroups = NULL,
+  AlternativeSequence = NULL,
+  AlternativeSpectrum = NULL,
+  AlternativeCharge = NULL,
   PTMs = NULL,
   ...
 )
 }
 \arguments{
 \item{ScanMetadata}{Object of the scan_metadata class from get_scan_metadata. Required,
-unless an alternative spectrum, sequence, and charge is provided (not recommended for beginners).}
+unless an alternative spectrum, sequence, and charge is provided.}
 
 \item{PeakData}{Object of the peak_data class from get_peak_data. Required,
-unless an alternative spectrum, sequence, and charge is provided (not recommended for beginners).}
+unless an alternative spectrum, sequence, and charge is provided.}
 
 \item{PPMThreshold}{The ppm error threshold between calculated fragments. Default is 10. Required.}
 
@@ -37,7 +40,14 @@ Default is 0. There is a 3 peak minimum to calculate a correlation score. Requir
 
 \item{AlternativeIonGroups}{A "modified_ion" object from "make_mass_modified ions." Default is NULL.}
 
-\item{PTMs}{A modifications_pspecter object to test modified sequences. Default is NULL.}
+\item{AlternativeSequence}{A proforma-acceptable string to calculate the literature 
+fragments. The default is the sequence matched in the ScanMetadata file. Default is NULL.}
+
+\item{AlternativeSpectrum}{An alternative "peak_data" spectrum to use instead of the default 
+PeakData. Mostly used by other packages. Default is NULL.}
+
+\item{AlternativeCharge}{A different charge value to test besides the one in the PeakData 
+spectrum.}
 
 \item{MinAbundance}{Minimum abundance for calculating isotopes. Default is 0.1.}
 }

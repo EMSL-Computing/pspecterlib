@@ -632,97 +632,172 @@ is_sequence <- function(Sequence) {
 #' @description Converts proforma strings to a PTM object that get_matched_peaks uses
 #'     to calculate fragmentation patterns  
 #' 
-#' @param proforma A string written in the format "M.S`[`Methyl`]`S`[`22`]`S`[`23`]`.V"
+#' @param proforma A string written in the format "M.S[Methyl]S[22]S[23].V"
 #' 
 #' @examples
-#' \dontrun {
+#' \dontrun{
 #' 
 #' convert_proforma("M.(S)[Acetyl]ATNNIAQARKLVEQLRIEAGIERIKVSKAASDLMSYCEQHARNDPLLVGVPASENPFKDK(KPCIIL)[-52.9879].")
 #'
-#' convert_proforma("M.SS[Methyl]S.V", "M.S[Methyl]S[22]S[23].V"))
+#' convert_proforma("M.SS[Methyl]S.V")
+#' 
+#' convert_proforma("M.S[Methyl]S[22]S[23].V")
 #' 
 #' convert_proforma("TESTTESTTEST")
 #' 
 #' }
 #' @export
-convert_proform <- function(Name,
-                     AMU_Change,
-                     N_Position,
-                     Molecular_Formula = NULL) {
+convert_proforma <- function(proforma) {
   
   ##################
   ## CHECK INPUTS ##
   ##################
   
-  # Assert that Names is a vector of characters
-  if (is.null(Name) || !is.character(Name)) {
-    stop("Name must be a vector of strings describing each modification.")
+  # Proteoform should be a string
+  if (is.null(proforma) || !is.character(proforma)) {
+    stop("proforma must be a vector of characters.")
   }
   
-  # Assert that AMU_Change is a vector of masses
-  if (is.null(AMU_Change) || !is.numeric(AMU_Change)) {
-    stop("AMU_Change must be a vector of masses written as a numeric.")
+  ###########################
+  ## CHECK SIMPLE SEQUENCE ##
+  ###########################
+  
+  # If no brackets, test the sequence is acceptable and then return that sequence 
+  if (!grepl("\\[|\\]", proforma)) {
+    if (is_sequence(proforma)) {return(proforma)} else {stop("The detected sequence is not acceptable.")}
   }
   
-  # Assert that N_Position is a vector integers
-  if (is.null(N_Position) || !is.numeric(N_Position)) {
-    stop("N_Position should be a vector of integers.")
+  ###################
+  ## LOAD GLOSSARY ##
+  ###################
+  
+  # Load backend glossary
+  Glossary <- data.table::fread(
+    system.file("extdata", "Unimod_v20220602.csv", package = "ProteoMatch")
+  )
+  
+  #####################################
+  ## OTHERWISE, BUILD THE PTM OBJECT ##
+  #####################################
+  
+  ## SEPARATE THE MODIFICATIONS ##
+  
+  # Grab the data within each of the hard brackets []
+  Bracketed_Data <- proforma %>%
+    gsub(pattern = "[", replacement = "^[", fixed = T) %>%
+    gsub(pattern= "]", replacement = "]^", fixed = T) %>%
+    strsplit("^", fixed = T) %>%
+    unlist() %>%
+    lapply(function(x) {if (grepl("[", x, fixed = T)) {x}}) %>%
+    unlist()
+  
+  # Separate out the modifications from the mass changes
+  Modifications <- NULL
+  MassChanges <- NULL
+  
+  # Separate modifications and mass changes
+  for (Mod in Bracketed_Data) {
+    Mod <- gsub("\\[|\\]", "", Mod)
+    StringTest <- suppressWarnings(is.na(as.numeric(Mod)))
+    if (StringTest) {Modifications <- c(Modifications, Mod)} else {MassChanges <- c(MassChanges, as.numeric(Mod))}
   }
   
-  # Make N_Position a vector of integers
-  N_Position <- N_Position %>% abs() %>% round()
-  
-  # Assert that the three vectors are of the same length
-  if (length(Name) != length(AMU_Change) | length(Name) != length(N_Position)) {
-    stop("The length of Names, AMU_Change, and N_Position must be the same.")
-  }
-  
-  # Run additional checks if Molecular_Formula is not NULL
-  if (is.null(Molecular_Formula) == FALSE) {
+  # Check if modification is in the glossary
+  if (!is.null(Modifications)) {
     
-    # Assert that the length is the same
-    if (length(Name) != length(Molecular_Formula)) {
-      stop("Molecular_Formula must be the same length as Names, AMU_Change, and N_Position.")
+    # Ensure all modifications are in the library
+    if (all(Modifications %in% Glossary$Modification) == FALSE) {
+      
+      stop(paste("Modification", Modifications[Modifications %in% Glossary$Modification == FALSE],
+                 "is not in our library. If no input error is found, submit an issue",
+                 "request on github.")
+      )
+      
     }
-    
   }
+  
+  ## CLEAN THE SEQUENCE ##
+  
+  # First, use the proforma annotation
+  Sequence <- proforma
+  
+  # Then, remove each of the bracketed pieces of information
+  for (Mod in Bracketed_Data) {
+    Sequence <- gsub(Mod, "", Sequence, fixed = TRUE)
+  }
+  
+  # Then, remove any of the remaining parenthesis
+  Sequence <- gsub("\\(|\\)", "", Sequence)
+  
+  # Get the number of periods in the sequence
+  NumPeriods <- stringr::str_count(Sequence, "\\.")
+  
+  # There shouldn't be more than 2 periods at this point in the pipeline
+  if (NumPeriods > 2) {
+    stop(paste0("There are too many periods in the input proteoform", Proteoform))
+  }
+  
+  # Split by the periods and take the largest chunk
+  SeqSplit <- strsplit(Sequence, "\\.") %>% unlist()
+  SeqPosition <- lapply(SeqSplit, nchar) %>% unlist() %>% which.max()
+  Sequence <- SeqSplit[SeqPosition]
+  
+  ## CONVERT SEQUENCE TO POSITIONS ##
+  
+  SeqWithMods <- proforma
+  
+  # First, convert the mass changes to a simple "MassChange" 
+  for (mod in MassChanges) {
+    SeqWithMods <- gsub(paste0("[", mod, "]"), "[MassChange]", SeqWithMods, fixed = T)
+  }
+  
+  # Get sequence cleaned with modifications 
+  SeqWithMods <- SeqWithMods %>% 
+    strsplit("\\.") %>% 
+    unlist() %>% 
+    .[SeqPosition] %>% 
+    gsub(pattern = "\\(|\\)", replacement = "") 
+  
+  # Get modification starts and finishes 
+  PTM_Object <- data.frame(
+    Start = stringr::str_locate_all(SeqWithMods, "\\[")[[1]][,1],
+    Finish = stringr::str_locate_all(SeqWithMods, "\\]")[[1]][,1]
+  ) %>%
+    dplyr::mutate(
+      `Mod Number` = 1:nrow(.),
+      Span = Finish - Start,
+      `Rolling Span` = cumsum(Span),
+      `Rolling Span` = ifelse(is.na(`Rolling Span`) & `Mod Number` == 1, Span, `Rolling Span`),
+      `N Position` = Finish - `Mod Number` - `Rolling Span`,
+      Name = gsub("\\[|\\]", "", Bracketed_Data),
+      `AMU Change` = suppressWarnings(as.numeric(Name)),
+    ) %>%
+    dplyr::select(Name, `AMU Change`, `N Position`) %>%
+    dplyr::mutate(
+      `AMU Change` = purrr::map2(`AMU Change`, Name, function(`AMU Change`, Name) {
+        ifelse(is.na(`AMU Change`), unlist(Glossary[Glossary$Modification == Name, "Mass Change"]), `AMU Change`)
+      }) %>% unlist()
+    )
+  
+  rownames(PTM_Object) <- 1:nrow(PTM_Object)
   
   ######################
   ## BUILD THE OBJECT ##
   ######################
   
-  # Build modification data table
-  PTM <- data.table::data.table(
-    "Name" = Name,
-    "AMU Change" = AMU_Change,
-    "N Position" = N_Position
-  )
+  # Add proforma string input 
+  attr(PTM_Object, "proforma") <- proforma
+  attr(PTM_Object, "cleaned_sequence") <- Sequence
+  attr(PTM_Object, "modifications") <- Bracketed_Data
+  attr(PTM_Object, "mass_changes") <- MassChanges
+  attr(PTM_Object, "PTMs") <- Modifications
   
-  
-  # If Molecular_Formula is not NULL
-  if (is.null(Molecular_Formula) == FALSE) {
-    
-    # Get molecular formula objects
-    MolForms <- lapply(1:length(Molecular_Formula), function(el) {
-      make_molecule(Molecular_Formula[[el]])
-    })
-    
-    # Add names
-    names(MolForms) <- Name
-    
-    # Add attribute
-    attr(PTM, "pspecter")$MolForms <- MolForms
-    
-    # Add molecular formula to the dataframe
-    PTM$`Molecular Formula` <- lapply(1:length(MolForms), function(el) {unlist(MolForms[[el]][1, "Formula"])}) %>% unlist()
-    
-  }
   
   # Add class
-  class(PTM) <- c(class(PTM), "modifications_pspecter")
+  class(PTM_Object) <- c(class(PTM_Object), "modifications_pspecter")
   
   # Return results
-  return(PTM)
+  return(PTM_Object)
   
 }
 

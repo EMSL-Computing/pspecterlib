@@ -17,8 +17,9 @@ A simple test function to ensure the provided sequence is an
 The output will either be a "TRUE" acceptable sequence, or "FALSE"
    unacceptable sequence. An acceptable sequence cannot be NULL,
    will not have any spaces or non-letter characters, will be longer than 1
-   amino acid, and will not contain the letters B, J, O, U, X, or Z. Modification
-   notation (i.e. "TES[Acetyl]T") is not accepted. Modifications should be of the
+   amino acid, and will not contain the letters B, J, O, U, X, or Z. Proforma
+   notation (i.e. "TES[Acetyl]T") is not accepted, though you can convert the 
+   proforma string to a sequence with convert_proforma. Modifications should be of the
    pspecter_ptm class as defined by the "make_ptm" class and can be applied to
    the get_matched_peaks algorithm.
 }

@@ -631,6 +631,8 @@ is_sequence <- function(Sequence) {
 #' 
 #' @description Converts proforma strings to a PTM object that get_matched_peaks uses
 #'     to calculate fragmentation patterns  
+#'     
+#' @author Degnan, David. Flores, Javier.
 #' 
 #' @param proforma A string written in the format "M.S[Methyl]S[22]S[23].V"
 #' 
@@ -786,12 +788,11 @@ convert_proforma <- function(proforma) {
   ######################
   
   # Add proforma string input 
-  attr(PTM_Object, "proforma") <- proforma
-  attr(PTM_Object, "cleaned_sequence") <- Sequence
-  attr(PTM_Object, "modifications") <- Bracketed_Data
-  attr(PTM_Object, "mass_changes") <- MassChanges
-  attr(PTM_Object, "PTMs") <- Modifications
-  
+  attr(PTM_Object, "pspecter")$proforma <- proforma
+  attr(PTM_Object, "pspecter")$cleaned_sequence <- Sequence
+  attr(PTM_Object, "pspecter")$modifications <- Bracketed_Data
+  attr(PTM_Object, "pspecter")$mass_changes <- MassChanges
+  attr(PTM_Object, "pspecter")$PTMs <- Modifications
   
   # Add class
   class(PTM_Object) <- c(class(PTM_Object), "modifications_pspecter")

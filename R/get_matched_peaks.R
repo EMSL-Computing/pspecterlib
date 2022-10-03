@@ -77,19 +77,20 @@
 #' BU_Peak <- get_peak_data(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728)
 #' BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak)
 #'
-#' # Test bottom up data with a mass modified ion and a PTM
+#' # Test bottom up data with a PTM
 #' BU_Match2 <- get_matched_peaks(
 #'   ScanMetadata = BU_ScanMetadata,
 #'   PeakData = BU_Peak,
-#'   PTMs = make_ptm(Name = c("Acetyl", "Methyl"),
-#'                   AMU_Change = c(42.010565, 14.015650),
-#'                   N_Position = c(2, 16),
-#'                   Molecular_Formula = list(list("C" = 2, "H" = 2, "O" = 1),
-#'                                            list("C" = 1, "H" = 2))),
-#'   AlternativeIonGroups = make_mass_modified_ion(Ion = c("b", "z"),
-#'                                                 Symbol = c("+", "+"),
-#'                                                 AMU_Change = c(1.00727647, 1.00727647))
+#'   AlternativeSequence = "M.IGAV[Acetyl]GGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIG[20.1]AGLNK" 
 #' )
+#' 
+#' # Test bottom up data with a mass modified ion 
+#' BU_Match3 <- get_matched_peaks(
+#'  ScanMetadata = BU_ScanMetadata,
+#'  PeakData = BU_Peak, 
+#'  AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "+", AMU_Change = 1.00727647)
+#' )
+#' 
 #'
 #' # Test with top down data
 #' TD_Peak <- get_peak_data(ScanMetadata = TD_ScanMetadata, ScanNumber = 5709)
@@ -109,7 +110,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                               AlternativeSequence = NULL,
                               AlternativeSpectrum = NULL,
                               AlternativeCharge = NULL,
-                              PTMs = NULL,
                               ...) {
 
   .get_matched_peaks(
@@ -124,7 +124,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     AlternativeSequence = AlternativeSequence,
     AlternativeSpectrum = AlternativeSpectrum,
     AlternativeCharge = AlternativeCharge,
-    PTMs = PTMs,
     ...
   )
 
@@ -138,7 +137,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                                MinimumAbundance,
                                CorrelationScore,
                                AlternativeIonGroups,
-                               PTMs,
                                AlternativeSequence = NULL,
                                AlternativeSpectrum = NULL,
                                AlternativeCharge = NULL,
@@ -216,15 +214,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     stop("CorrelationScore must be between 0 and 1.")
   }
 
-  # Assert that the alternative sequence is a real sequence
-  if (is.null(AlternativeSequence) == FALSE) {
-
-    if (is_sequence(AlternativeSequence) == FALSE) {
-      stop("The provided AlternativeSequence is not acceptable. See is_sequence for more details.")
-    }
-
-  }
-
   # Assert that the alternative spectrum is a real spectrum
   if (is.null(AlternativeSpectrum) == FALSE) {
 
@@ -244,13 +233,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     # Round to the nearest positive integer
     AlternativeCharge <- AlternativeCharge %>% abs() %>% round()
 
-  }
-
-  # PTMS must be of a defined class
-  if (is.null(PTMs) == FALSE) {
-    if ("modifications_pspecter" %in% class(PTMs) == FALSE) {
-      stop("PTMs must be of the class 'modifications_pspecter' from make_ptm.")
-    }
   }
 
   # Modified ions must be of a defined class
@@ -325,11 +307,16 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   # Get Scan Number
   ScanNumber <- attr(PeakData, "pspecter")$ScanNumber
 
-  # Get the sequence
+  # Get the sequence object 
   if (is.null(AlternativeSequence)) {
-    Sequence <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Sequence"] %>% unlist()
-  } else {Sequence <- AlternativeSequence}
-
+    Sequence_Object <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Sequence"] %>% unlist() %>% convert_proforma()
+  } else {Sequence_Object <- convert_proforma(AlternativeSequence)}
+  
+  # Pull the sequence
+  if (is.character(Sequence_Object)) {Sequence <- Sequence_Object} else {
+    Sequence <- attr(Sequence_Object, "pspecter")$cleaned_sequence
+  }
+  
   # Get the precursor charge
   if (is.null(AlternativeCharge)) {
     PrecursorCharge <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor Charge"] %>% unlist()
@@ -407,9 +394,13 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
   # Add blank column to track modifications
   Fragments$Modifications <- ""
-
+  
   # Apply modifications
-  if (is.null(PTMs) == FALSE) {
+  if (is.character(Sequence_Object) == FALSE) {
+    
+    # Pull out the PTMs
+    PTMs <- Sequence_Object
+    class(PTMs) <- "data.frame"
 
     # Split fragments by a,b,c ions and x,y,z ions
     FragmentsABC <- Fragments %>% subset(subset = grepl("a|b|c", `General Type`))
@@ -492,8 +483,18 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
       # Add to mass
       for (ModName in ModNames) {
-        # Add modifications as we do in proteomatch 
-        Atoms <- add_molforms(Atoms, molform)
+        
+        if (ModName %in% Glossary$Modification) {
+          
+          premolform <- Glossary[Glossary$Modification == ModName, 4:ncol(Glossary)] %>%
+            dplyr::select(colnames(.)[!is.na(.)]) %>%
+            paste0(colnames(.), ., collapse = "")
+          
+          # Add to formula
+          Atoms <- add_molforms(Atoms, as.molform(premolform))
+          
+        }
+
       }
     }
 
@@ -725,8 +726,8 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     attr(Fragments, "pspecter")$AlternativeIonGroups <- AlternativeIonGroups
   }
 
-  if (is.null(PTMs) == FALSE) {
-    attr(Fragments, "pspecter")$PTMs = PTMs
+  if (is.character(Sequence_Object) == FALSE) {
+    attr(Fragments, "pspecter")$PTMs = Sequence_Object
   }
 
   # Add the matched peaks class

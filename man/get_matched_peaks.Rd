@@ -16,7 +16,6 @@ get_matched_peaks(
   AlternativeSequence = NULL,
   AlternativeSpectrum = NULL,
   AlternativeCharge = NULL,
-  PTMs = NULL,
   ...
 )
 }
@@ -109,18 +108,21 @@ Objects of the class "matched_peaks" contain attributes that are referenced by d
 BU_Peak <- get_peak_data(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728)
 BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak)
 
-# Test bottom up data with a mass modified ion and a PTM
+# Test bottom up data with a PTM
 BU_Match2 <- get_matched_peaks(
   ScanMetadata = BU_ScanMetadata,
   PeakData = BU_Peak,
-  PTMs = make_ptm(Name = c("Acetyl", "Methyl"),
-                  AMU_Change = c(42.010565, 14.015650),
-                  N_Position = c(2, 16),
-                  Molecular_Formula = list(list("C" = 2, "H" = 2, "O" = 1),
-                                           list("C" = 1, "H" = 2))),
-  AlternativeIonGroups = make_mass_modified_ion(Ion = c("b", "z"),
-                                                Symbol = c("+", "+"),
-                                                AMU_Change = c(1.00727647, 1.00727647))
+  AlternativeSequence = "M.IGAV[Acetyl]GGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIG[20.1]AGLNK" 
+)
+
+# Test bottom up data with a mass modified ion 
+BU_Match3 <- get_matched_peaks(
+ ScanMetadata = BU_ScanMetadata,
+ PeakData = BU_Peak, 
+ AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "+", AMU_Change = 1.00727647)
+)
+
+
 )
 
 # Test with top down data

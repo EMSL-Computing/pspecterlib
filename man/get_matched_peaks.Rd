@@ -123,8 +123,6 @@ BU_Match3 <- get_matched_peaks(
 )
 
 
-)
-
 # Test with top down data
 TD_Peak <- get_peak_data(ScanMetadata = TD_ScanMetadata, ScanNumber = 5709)
 TD_Match <- get_matched_peaks(ScanMetadata = TD_ScanMetadata, PeakData = TD_Peak)

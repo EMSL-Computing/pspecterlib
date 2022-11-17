@@ -1,7 +1,7 @@
 ---
 title: "PSpecter Library Demo"
 author: "Degnan, David J"
-date: "October 1st, 2022"
+date: "October 7th, 2022"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Bottom_Up_Example}
@@ -33,7 +33,7 @@ This package supports multiple steps of the proteomics quality control process,
 including matching calculated and experimental peptide/protein fragments for both
 data-dependent acquisition methods of top-down and bottom-up data in ThermoFisher raw and XML formats. 
 PSpecteR builds off existing proteomics packages in R, including mzR, MSnbase, 
-rawrr, Rdisop, and BRAIN. 
+rawrr, and isopat.
 
 In pspecter library, there are no major differences between functions to visualize
 bottom-up or top-down proteomic data. Visually, bottom-up data will have more 
@@ -68,7 +68,7 @@ tmpdir <- tempdir()
 files <- c(
  "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/BottomUp/BottomUp.mzML",
  "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/BottomUp/BottomUp.mzid",
-  "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/TopDown/TopDown.mzML",
+ "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/TopDown/TopDown.mzML",
  "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/TopDown/TopDown.mzid",
  "https://raw.githubusercontent.com/EMSL-Computing/PSpecteR/master/pspecter_container/TestFiles/QC_Shew.fasta"
 )
@@ -245,14 +245,11 @@ at position 2, a methyl at position 6, and protonated b and z ions:
 BU_Match2 <- get_matched_peaks(
   ScanMetadata = BU_ScanMetadata,
   PeakData = BU_Peak,
-  PTMs = make_ptm(Name = c("Acetyl", "Methyl"),
-                  AMU_Change = c(42.010565, 14.015650),
-                  N_Position = c(2, 16),
-                  Molecular_Formula = list(list("C" = 2, "H" = 2, "O" = 1),
-                                           list("C" = 1, "H" = 2))),
+  AlternativeSequence = "M.IG[Acetyl]AVGGTENVSLTQSQMP[Methyl]AHNHLVAASTVSGTVKPLANDIIG[20.1]AGLNK", 
   AlternativeIonGroups = make_mass_modified_ion(Ion = c("b", "z"),
                                                 Symbol = c("+", "+"),
-                                                AMU_Change = c(1.00727647, 1.00727647))
+                                                AMU_Change = c(1.00727647, 1.00727647)),
+  DebugMode = FALSE
 )
 
 Results <- rbind(
@@ -356,10 +353,12 @@ the addition/subtraction of molecular formulas, including capabilities to handle
 is lost during modification. 
 
 ```{r formula example}
-Molecule1 <- make_molecule(list("C" = 2, "H" = 3, "O" = 1))
-Molecule2 <- make_molecule(list("O" = -2))
+# Molecular formula objects are vectors that range from 1-92 (Hydrogen to Uranium)
+Molecule1 <- as.molform("C6H12O6") 
+Molecule2 <- as.molform("O-8") # They can include negatives!
 
-add_molecules(Molecule1, Molecule2, CapNegatives = TRUE)$Formula
+add_molforms(Molecule1, Molecule2, CapNegatives = TRUE) %>% # Cap Negatives to prevent counts below 0
+  collapse_molform() # Collapse vector to readable format
 ```
 
 

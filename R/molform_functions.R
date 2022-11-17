@@ -268,8 +268,14 @@ add_molforms <- function(..., CapNegatives = TRUE) {
   ## ADD VALUES ##
   ################
   
+  # Reduce results 
+  Added <- Reduce(`+`, list(...))
+  
   # Pull and add all AtomLists
-  return(Reduce(`+`, list(...)))
+  if (!CapNegatives) {return(Added)} else{
+    Added[Added < 0] <- 0
+    return(Added)
+  }
 
 }
 

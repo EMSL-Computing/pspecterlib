@@ -4,21 +4,24 @@
 #'    annotated with matches to calculated fragments.
 #'
 #' @param ScanMetadata  Object of the scan_metadata class from get_scan_metadata. Required,
-#'    unless an alternative spectrum, sequence, and charge is provided (not recommended for beginners).
+#'    unless an alternative spectrum, sequence, and charge is provided.
 #' @param PeakData Object of the peak_data class from get_peak_data. Required,
-#'    unless an alternative spectrum, sequence, and charge is provided (not recommended for beginners).
+#'    unless an alternative spectrum, sequence, and charge is provided.
 #' @param PPMThreshold The ppm error threshold between calculated fragments. Default is 10. Required.
 #' @param IonGroups Determine which ion types to calculate. a, b, c, x, y, z are supported. Default
 #'    is c("a", "b", "c", "x", "y", "z"). Required.
 #' @param CalculateIsotopes A logical which indicates whether isotopes should be calculated.
 #'    FALSE = Faster Calculations. Default is TRUE. Required.
-#' @param IsotopicPercentage The minimum value of the relative reference abundance to search
-#'    for relevant isotopes, For proteomics data, 10% is generally viewed as an acceptable
-#'    cutoff. Default is 10. The range of acceptable values is 0-100. Default is 0.
+#' @param MinAbundance Minimum abundance for calculating isotopes. Default is 0.1.
 #' @param CorrelationScore A minimum correlation score to filter isotopes by. Range is 0 to 1.
 #'    Default is 0. There is a 3 peak minimum to calculate a correlation score. Required.
 #' @param AlternativeIonGroups A "modified_ion" object from "make_mass_modified ions." Default is NULL.
-#' @param PTMs A modifications_pspecter object to test modified sequences. Default is NULL.
+#' @param AlternativeSequence A proforma-acceptable string to calculate the literature 
+#'    fragments. The default is the sequence matched in the ScanMetadata file. Default is NULL.
+#' @param AlternativeSpectrum An alternative "peak_data" spectrum to use instead of the default 
+#'     PeakData. Mostly used by other packages. Default is NULL.
+#' @param AlternativeCharge A different charge value to test besides the one in the PeakData 
+#'     spectrum. 
 #'
 #' @details
 #' The data.table outputted by this function contains 17 columns.
@@ -74,19 +77,20 @@
 #' BU_Peak <- get_peak_data(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728)
 #' BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak)
 #'
-#' # Test bottom up data with a mass modified ion and a PTM
+#' # Test bottom up data with a PTM
 #' BU_Match2 <- get_matched_peaks(
 #'   ScanMetadata = BU_ScanMetadata,
 #'   PeakData = BU_Peak,
-#'   PTMs = make_ptm(Name = c("Acetyl", "Methyl"),
-#'                   AMU_Change = c(42.010565, 14.015650),
-#'                   N_Position = c(2, 16),
-#'                   Molecular_Formula = list(list("C" = 2, "H" = 2, "O" = 1),
-#'                                            list("C" = 1, "H" = 2))),
-#'   AlternativeIonGroups = make_mass_modified_ion(Ion = c("b", "z"),
-#'                                                 Symbol = c("+", "+"),
-#'                                                 AMU_Change = c(1.00727647, 1.00727647))
+#'   AlternativeSequence = "M.IGAV[Acetyl]GGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIG[20.1]AGLNK" 
 #' )
+#' 
+#' # Test bottom up data with a mass modified ion 
+#' BU_Match3 <- get_matched_peaks(
+#'  ScanMetadata = BU_ScanMetadata,
+#'  PeakData = BU_Peak, 
+#'  AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "+", AMU_Change = 1.00727647)
+#' )
+#' 
 #'
 #' # Test with top down data
 #' TD_Peak <- get_peak_data(ScanMetadata = TD_ScanMetadata, ScanNumber = 5709)
@@ -100,10 +104,12 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                               PPMThreshold = 10,
                               IonGroups = c("a", "b", "c", "x", "y", "z"),
                               CalculateIsotopes = TRUE,
-                              IsotopicPercentage = 10,
+                              MinimumAbundance = 1,
                               CorrelationScore = 0,
                               AlternativeIonGroups = NULL,
-                              PTMs = NULL,
+                              AlternativeSequence = NULL,
+                              AlternativeSpectrum = NULL,
+                              AlternativeCharge = NULL,
                               ...) {
 
   .get_matched_peaks(
@@ -112,10 +118,12 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     PPMThreshold = PPMThreshold,
     IonGroups = IonGroups,
     CalculateIsotopes = CalculateIsotopes,
-    IsotopicPercentage = IsotopicPercentage,
+    MinimumAbundance = MinimumAbundance,
     CorrelationScore = CorrelationScore,
     AlternativeIonGroups = AlternativeIonGroups,
-    PTMs = PTMs,
+    AlternativeSequence = AlternativeSequence,
+    AlternativeSpectrum = AlternativeSpectrum,
+    AlternativeCharge = AlternativeCharge,
     ...
   )
 
@@ -126,10 +134,9 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                                PPMThreshold,
                                IonGroups,
                                CalculateIsotopes,
-                               IsotopicPercentage,
+                               MinimumAbundance,
                                CorrelationScore,
                                AlternativeIonGroups,
-                               PTMs,
                                AlternativeSequence = NULL,
                                AlternativeSpectrum = NULL,
                                AlternativeCharge = NULL,
@@ -181,17 +188,17 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     stop("CalculateIsotopes must be a single logical value TRUE or FALSE.")
   }
 
-  # Assert that Isotopic Percentage is a single number
-  if (is.numeric(IsotopicPercentage) == FALSE || length(IsotopicPercentage) > 1) {
-    stop("IsotopicPercentage must be a single numeric value. For example, 10.")
+  # Assert that Minimum Abundance is a single number
+  if (is.numeric(MinimumAbundance) == FALSE || length(MinimumAbundance) > 1) {
+    stop("MinimumAbundance must be a single numeric value. For example, 0.1.")
   }
 
-  # Convert Isotopic Percentage to a positive number
-  IsotopicPercentage <- abs(IsotopicPercentage)
+  # Convert MinimumAbundance to a positive number
+  MinimumAbundance <- abs(MinimumAbundance)
 
-  # Assert that Isotopic Percentage is in the range of 0 and 100
-  if (IsotopicPercentage > 100) {
-    stop("IsotopicPercentage must be between 0 and 100.")
+  # Assert that MinimumAbundance is in the range of 0 and 100
+  if (MinimumAbundance > 100) {
+    stop("MinimumAbundance must be between 0 and 100.")
   }
 
   # Assert that the Correlation Score is a single number
@@ -205,15 +212,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   # Assert that Correlation Score is in the range of 0 and 1
   if (CorrelationScore > 1) {
     stop("CorrelationScore must be between 0 and 1.")
-  }
-
-  # Assert that the alternative sequence is a real sequence
-  if (is.null(AlternativeSequence) == FALSE) {
-
-    if (is_sequence(AlternativeSequence) == FALSE) {
-      stop("The provided AlternativeSequence is not acceptable. See is_sequence for more details.")
-    }
-
   }
 
   # Assert that the alternative spectrum is a real spectrum
@@ -237,13 +235,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
   }
 
-  # PTMS must be of a defined class
-  if (is.null(PTMs) == FALSE) {
-    if ("modifications_pspecter" %in% class(PTMs) == FALSE) {
-      stop("PTMs must be of the class 'modifications_pspecter' from make_ptm.")
-    }
-  }
-
   # Modified ions must be of a defined class
   if (is.null(AlternativeIonGroups) == FALSE) {
     if ("modified_ion" %in% class(AlternativeIonGroups) == FALSE) {
@@ -255,7 +246,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   ###################################################################
   ## 0. DEFINE FUNCTION TO REMOVE EXTRANEOUS PEAK MATCHING OPTIONS ##
   ###################################################################
-
+  
   # First, take the minimum PPM spacing in peak data
   PeakSpacing <- (PeakData$`M/Z` - dplyr::lag(PeakData$`M/Z`, default = dplyr::first(PeakData$`M/Z`))) /
     (dplyr::lag(PeakData$`M/Z`, default = dplyr::first(PeakData$`M/Z`))) * 1e6
@@ -267,31 +258,46 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     # First, remove all peaks less than the min peak MZ and more than the max peak MZ
     Fragments <- Fragments %>% dplyr::filter(`M/Z` > min(PeakData$`M/Z`) & `M/Z` < max(PeakData$`M/Z`))
 
-    #  Second, remove charge 1 less than ChargeThresh, and charge 2 less than ChargeThresh2
+    #  Second, remove charge 1 less than the first n positions (ChargeThresh), 
+    #  and charge 2 less than the second n positions (ChargeThresh2)
     toRm <- c(which(Fragments$Z > 1 & Fragments$Position <= ChargeThresh),
               which(Fragments$Z > 2 & Fragments$Position <= ChargeThresh2)) %>%
       unique() %>%
       sort()
     if (length(toRm) > 0) {Fragments <- Fragments[-toRm,]}
 
-    # Then, collapse down peaks to threshold bins, picking the smallest charge
-    BinVal <- 0
-
-    PreSlice <- Fragments %>%
-      dplyr::arrange(`M/Z`) %>%
+    
+    # First, remove peaks that would never match 
+    Fragments <- Fragments %>%
       dplyr::mutate(
-        PPM = (`M/Z` - dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) / (dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) * 1e6,
-        Flag = PPM < PPMBinSize,
-        Bin = lapply(Flag, function(Flag) {
-          if (Flag == FALSE) {BinVal <<- BinVal + 1}
-          BinVal
+        `PPM High` = Fragments$`M/Z` + (PPMThreshold/1e6 * Fragments$`M/Z`),
+        `PPM Low` =  Fragments$`M/Z` - (PPMThreshold/1e6 * Fragments$`M/Z`),
+        Within = purrr::map2(`PPM Low`, `PPM High`, function(Low, High) {
+          nrow(PeakData[PeakData$`M/Z` >= Low & PeakData$`M/Z` <= High,]) != 0
         }) %>% unlist()
       ) %>%
-      dplyr::group_by(Bin) %>%
-      dplyr::slice(which.min(Z)) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(-c(PPM, Flag, Bin))
-
+      dplyr::filter(Within == TRUE) %>%
+      dplyr::select(-c(`PPM Low`, `PPM High`, Within))
+    
+    # Second take the minimum charge peak within each ppm bin to prioritize smaller charges. 
+    # BinVal <- 0 # This is to count bins
+    # Fragments <- Fragments %>%
+    #   dplyr::arrange(`M/Z`) %>%
+    #   dplyr::mutate(
+    #     PPM = (`M/Z` - dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) / (dplyr::lag(`M/Z`, default = dplyr::first(`M/Z`))) * 1e6,
+    #     Flag = PPM < PPMBinSize,
+    #     Bin = lapply(Flag, function(Flag) {
+    #       if (Flag == FALSE) {BinVal <<- BinVal + 1}
+    #       BinVal
+    #     }) %>% unlist()
+    #   ) %>%
+    #   dplyr::group_by(Bin) %>%
+    #   dplyr::slice(which.min(Z)) %>%
+    #   dplyr::ungroup() %>%
+    #   dplyr::select(-c(PPM, Flag, Bin))
+    
+    return(Fragments)
+    
   }
 
   ##########################
@@ -301,11 +307,16 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   # Get Scan Number
   ScanNumber <- attr(PeakData, "pspecter")$ScanNumber
 
-  # Get the sequence
+  # Get the sequence object 
   if (is.null(AlternativeSequence)) {
-    Sequence <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Sequence"] %>% unlist()
-  } else {Sequence <- AlternativeSequence}
-
+    Sequence_Object <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Sequence"] %>% unlist() %>% convert_proforma()
+  } else {Sequence_Object <- convert_proforma(AlternativeSequence)}
+  
+  # Pull the sequence
+  if (is.character(Sequence_Object)) {Sequence <- Sequence_Object} else {
+    Sequence <- attr(Sequence_Object, "pspecter")$cleaned_sequence
+  }
+  
   # Get the precursor charge
   if (is.null(AlternativeCharge)) {
     PrecursorCharge <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor Charge"] %>% unlist()
@@ -383,9 +394,13 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
   # Add blank column to track modifications
   Fragments$Modifications <- ""
-
+  
   # Apply modifications
-  if (is.null(PTMs) == FALSE) {
+  if (is.character(Sequence_Object) == FALSE) {
+    
+    # Pull out the PTMs
+    PTMs <- Sequence_Object
+    class(PTMs) <- "data.frame"
 
     # Split fragments by a,b,c ions and x,y,z ions
     FragmentsABC <- Fragments %>% subset(subset = grepl("a|b|c", `General Type`))
@@ -443,6 +458,12 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   MolFormDF <- Fragments %>%
     dplyr::select(Sequence, Modifications) %>%
     unique()
+  
+  # Remove sequences with a single amino acid
+  MolFormDF <- MolFormDF %>% 
+    dplyr::mutate(Count = nchar(Sequence) > 1) %>% 
+    dplyr::filter(Count) %>% 
+    dplyr::select(-Count)
 
   # Iterate through, getting sequences and modifications and combining them
   MolFormDF$`Molecular Formula` <- lapply(1:nrow(MolFormDF), function(row) {
@@ -452,7 +473,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     Mod <- MolFormDF$Modifications[row]
 
     # Step two: convert sequence to molecule object
-    Atoms <- BRAIN::getAtomsFromSeq(Seq) %>% make_molecule()
+    Atoms <- get_aa_molform(Seq)
 
     # Step three: add mod if it exists
     if (Mod != "") {
@@ -462,7 +483,18 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
       # Add to mass
       for (ModName in ModNames) {
-        Atoms <- add_molecules(Atoms, attr(PTMs, "pspecter")$MolForms[[ModName]])
+        
+        if (ModName %in% Glossary$Modification) {
+          
+          premolform <- Glossary[Glossary$Modification == ModName, 4:ncol(Glossary)] %>%
+            dplyr::select(colnames(.)[!is.na(.)]) %>%
+            paste0(colnames(.), ., collapse = "")
+          
+          # Add to formula
+          Atoms <- add_molforms(Atoms, as.molform(premolform))
+          
+        }
+
       }
     }
 
@@ -478,16 +510,18 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     #)
     #Atoms <- add_molecules(Atoms, AccountForIon)
 
-    return(unlist(Atoms[1, "Formula"]))
+    return(collapse_molform(Atoms))
 
   }) %>% unlist()
-
+  
   # Add Molecular Formula
   Fragments <- merge(
     Fragments,
     MolFormDF %>% dplyr::select(Sequence, `Molecular Formula`),
     by = "Sequence"
   )
+  
+  ###########
 
   #######################################
   ## 6. CALCULATE ISOTOPES (OPTIONAL)  ##
@@ -504,31 +538,21 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
     # Get all unique Molecular Formulas
     MolForms <- Fragments$`Molecular Formula` %>% unique()
-
+    
     # Get isotopic distributions
-    IsotopeList <- do.call(rbind, lapply(MolForms, function(MolForm) {
-
+    IsotopeList <- do.call(dplyr::bind_rows, lapply(MolForms, function(MolForm) {
+      
       # Get Isotope Relative Abundances
-      IsotopeResults <- Rdisop::getMolecule(MolForm)
-
-      # Get the exact mass and isotopes forward from that position. Filter out
-      # anything below the Isotopic Percentage. Add the Isotope label (M+n)
-      IsotopeTable <- IsotopeResults$isotope[[1]] %>%
-        t() %>%
-        data.table::data.table() %>%
-        dplyr::rename(`M/Z` = V1, `Intensity` = V2) %>%
-        dplyr::mutate(Intensity = Intensity * 100) %>%
-        dplyr::filter(`M/Z` >= IsotopeResults$exactmass) %>%
-        dplyr::filter(Intensity >= IsotopicPercentage) %>%
-        dplyr::mutate(
-          Isotope = paste0("M+", (1:nrow(.)) - 1),
-          Isotope = ifelse(Isotope == "M+0", "M", Isotope),
-          `Molecular Formula` = MolForm
-        ) %>%
-        dplyr::select(-`M/Z`) %>%
-        dplyr::rename(`Isotopic Percentage` = Intensity)
+      IsotopeResults <- calculate_iso_profile(as.molform(MolForm), min_abundance = MinimumAbundance)
+      IsotopeResults$`Molecular Formula` = MolForm
+      return(IsotopeResults)
+      
     }))
-
+    
+    # Rename the rows of the isotope list
+    IsotopeList <- IsotopeList %>% dplyr::select(-isotope)
+    colnames(IsotopeList) <- c("M/Z", "Isotopic Percentage", "Isotope", "Molecular Formula")
+    
     # Filter out all monoiosotopic peaks
     IsotopeListFilter <- IsotopeList %>% dplyr::filter(Isotope != "M")
 
@@ -555,16 +579,13 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
       # Bind to fragments
       Fragments <- rbind(Fragments, IsoFragments)
+      
+      # Fill in isotopic percentages
+      Fragments <- merge(Fragments  %>% dplyr::select(-`Isotopic Percentage`), 
+                         IsotopeList[,c("Molecular Formula", "Isotope", "Isotopic Percentage")], 
+                         by = c("Molecular Formula", "Isotope"))
+    
 
-      # Remove isotopic percentage
-      Fragments <- Fragments %>% dplyr::select(-`Isotopic Percentage`)
-
-      # Add actual isotopic percentage values
-      Fragments <- merge(Fragments, IsotopeList, by = c("Molecular Formula", "Isotope")) %>%
-        dplyr::arrange(`M/Z`)
-
-      # Clean up fragments
-      Fragments <- cleanCalculatedFragments(Fragments)
     }
 
   }
@@ -697,7 +718,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   attr(Fragments, "pspecter")$PPMThreshold <- PPMThreshold
   attr(Fragments, "pspecter")$IonGroups <- IonGroups
   attr(Fragments, "pspecter")$IsotopesIncluded <- CalculateIsotopes
-  attr(Fragments, "pspecter")$IsotopicPercentageFilter <- IsotopicPercentage
+  attr(Fragments, "pspecter")$MinimumAbundance <- MinimumAbundance
   attr(Fragments, "pspecter")$CorrelationScoreFilter <- CorrelationScore
 
   # Add mass modified ions and PTMs if they are not NULL
@@ -705,8 +726,8 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     attr(Fragments, "pspecter")$AlternativeIonGroups <- AlternativeIonGroups
   }
 
-  if (is.null(PTMs) == FALSE) {
-    attr(Fragments, "pspecter")$PTMs = PTMs
+  if (is.character(Sequence_Object) == FALSE) {
+    attr(Fragments, "pspecter")$PTMs = Sequence_Object
   }
 
   # Add the matched peaks class

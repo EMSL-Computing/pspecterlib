@@ -321,6 +321,11 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   if (is.null(AlternativeCharge)) {
     PrecursorCharge <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor Charge"] %>% unlist()
   } else {PrecursorCharge <- AlternativeCharge}
+  
+  # Load Glossary
+  Glossary <- data.table::fread(
+    system.file("extdata", "Unimod_v20220602.csv", package = "ProteoMatch")
+  )
 
   #################################
   ## 2. CALCULATE BASE FRAGMENTS ##

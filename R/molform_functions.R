@@ -268,8 +268,14 @@ add_molforms <- function(..., CapNegatives = TRUE) {
   ## ADD VALUES ##
   ################
   
+  # Reduce results 
+  Added <- Reduce(`+`, list(...))
+  
   # Pull and add all AtomLists
-  return(Reduce(`+`, list(...)))
+  if (!CapNegatives) {return(Added)} else{
+    Added[Added < 0] <- 0
+    return(Added)
+  }
 
 }
 
@@ -630,7 +636,8 @@ is_sequence <- function(Sequence) {
 #' Convert a proforma string to a PTM object
 #' 
 #' @description Converts proforma strings to a PTM object that get_matched_peaks uses
-#'     to calculate fragmentation patterns  
+#'     to calculate fragmentation patterns. If there is no modification annotation,
+#'     the cleaned sequence is returned. 
 #'     
 #' @author Degnan, David. Flores, Javier.
 #' 
@@ -666,7 +673,23 @@ convert_proforma <- function(proforma) {
   
   # If no brackets, test the sequence is acceptable and then return that sequence 
   if (!grepl("\\[|\\]", proforma)) {
-    if (is_sequence(proforma)) {return(proforma)} else {stop("The detected sequence is not acceptable.")}
+    
+    # Get the number of periods in the sequence
+    NumPeriods <- stringr::str_count(proforma, "\\.")
+    
+    # There shouldn't be more than 2 periods at this point in the pipeline
+    if (NumPeriods > 2) {
+      stop(paste0("There are too many periods in the input proforma string", proforma))
+    }
+    
+    # Split by the periods and take the largest chunk
+    SeqSplit <- strsplit(proforma, "\\.") %>% unlist()
+    SeqPosition <- lapply(SeqSplit, nchar) %>% unlist() %>% which.max()
+    Sequence <- SeqSplit[SeqPosition]
+    
+    if (is_sequence(Sequence)) {return(Sequence)} else {
+      stop(paste0("The detected sequence: ", Sequence, " is not acceptable."))
+    }
   }
   
   ###################
@@ -675,7 +698,7 @@ convert_proforma <- function(proforma) {
   
   # Load backend glossary
   Glossary <- data.table::fread(
-    system.file("extdata", "Unimod_v20220602.csv", package = "ProteoMatch")
+    system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
   )
   
   #####################################
@@ -701,7 +724,7 @@ convert_proforma <- function(proforma) {
   for (Mod in Bracketed_Data) {
     Mod <- gsub("\\[|\\]", "", Mod)
     StringTest <- suppressWarnings(is.na(as.numeric(Mod)))
-    if (StringTest) {Modifications <- c(Modifications, Mod)} else {MassChanges <- c(MassChanges, as.numeric(Mod))}
+    if (StringTest) {Modifications <- c(Modifications, Mod)} else {MassChanges <- c(MassChanges, Mod)}
   }
   
   # Check if modification is in the glossary
@@ -736,7 +759,7 @@ convert_proforma <- function(proforma) {
   
   # There shouldn't be more than 2 periods at this point in the pipeline
   if (NumPeriods > 2) {
-    stop(paste0("There are too many periods in the input proteoform", Proteoform))
+    stop(paste0("There are too many periods in the input proforma string", proforma))
   }
   
   # Split by the periods and take the largest chunk
@@ -791,7 +814,7 @@ convert_proforma <- function(proforma) {
   attr(PTM_Object, "pspecter")$proforma <- proforma
   attr(PTM_Object, "pspecter")$cleaned_sequence <- Sequence
   attr(PTM_Object, "pspecter")$modifications <- Bracketed_Data
-  attr(PTM_Object, "pspecter")$mass_changes <- MassChanges
+  attr(PTM_Object, "pspecter")$mass_changes <- as.numeric(MassChanges)
   attr(PTM_Object, "pspecter")$PTMs <- Modifications
   
   # Add class

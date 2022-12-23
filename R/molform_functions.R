@@ -510,7 +510,7 @@ RelativeAbundances <- data.frame(
 #' 
 #' @param molform An object of the as.molform class
 #' @param min_abundance Minimum abundance for calculating isotopes. Default is 1. 
-#' @param limit See ?isopat::isopattern for more details. 0.1 appears to calculate enough isotopes. 
+#' @param limit See ?isopat::isopattern for more details. 0.001 appears to calculate enough isotopes. 
 #' 
 #' @examples
 #' \dontrun{
@@ -519,7 +519,7 @@ RelativeAbundances <- data.frame(
 #' 
 #' }
 #' @export
-calculate_iso_profile <- function(molform, min_abundance = 1, limit = 0.1) {
+calculate_iso_profile <- function(molform, min_abundance = 1, limit = 0.001) {
   
   ##################
   ## CHECK INPUTS ##

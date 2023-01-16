@@ -4,14 +4,14 @@
 \alias{calculate_iso_profile}
 \title{Calculate an isotope profile using isopat}
 \usage{
-calculate_iso_profile(molform, min_abundance = 1, limit = 0.1)
+calculate_iso_profile(molform, min_abundance = 1, limit = 0.001)
 }
 \arguments{
 \item{molform}{An object of the as.molform class}
 
 \item{min_abundance}{Minimum abundance for calculating isotopes. Default is 1.}
 
-\item{limit}{See ?isopat::isopattern for more details. 0.1 appears to calculate enough isotopes.}
+\item{limit}{See ?isopat::isopattern for more details. 0.001 appears to calculate enough isotopes.}
 }
 \description{
 Generates an isotope profile using [isopat](https://github.com/cran/isopat)

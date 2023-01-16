@@ -12,6 +12,7 @@ get_matched_peaks(
   CalculateIsotopes = TRUE,
   MinimumAbundance = 1,
   CorrelationScore = 0,
+  MatchingAlgorithm = "closest peak",
   AlternativeIonGroups = NULL,
   AlternativeSequence = NULL,
   AlternativeSpectrum = NULL,
@@ -36,6 +37,12 @@ FALSE = Faster Calculations. Default is TRUE. Required.}
 
 \item{CorrelationScore}{A minimum correlation score to filter isotopes by. Range is 0 to 1.
 Default is 0. There is a 3 peak minimum to calculate a correlation score. Required.}
+
+\item{MatchingAlgorithm}{Either "closest peak" or "highest abundance" where the "closest
+peak" implementation chooses the peak closest to the true M/Z value within the PPM window
+and "highest abundance" chooses the highest intensity peak within the PPM window. "closest peak"
+is recommended for peaks that have been peak picked with an external tool, 
+and "highest abundance" is recommended for noisy datasets or those with many peaks.}
 
 \item{AlternativeIonGroups}{A "modified_ion" object from "make_mass_modified ions." Default is NULL.}
 

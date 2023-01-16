@@ -15,6 +15,11 @@
 #' @param MinAbundance Minimum abundance for calculating isotopes. Default is 0.1.
 #' @param CorrelationScore A minimum correlation score to filter isotopes by. Range is 0 to 1.
 #'    Default is 0. There is a 3 peak minimum to calculate a correlation score. Required.
+#' @param MatchingAlgorithm Either "closest peak" or "highest abundance" where the "closest
+#'    peak" implementation chooses the peak closest to the true M/Z value within the PPM window
+#'    and "highest abundance" chooses the highest intensity peak within the PPM window. "closest peak"
+#'    is recommended for peaks that have been peak picked with an external tool, 
+#'    and "highest abundance" is recommended for noisy datasets or those with many peaks. 
 #' @param AlternativeIonGroups A "modified_ion" object from "make_mass_modified ions." Default is NULL.
 #' @param AlternativeSequence A proforma-acceptable string to calculate the literature 
 #'    fragments. The default is the sequence matched in the ScanMetadata file. Default is NULL.
@@ -106,6 +111,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                               CalculateIsotopes = TRUE,
                               MinimumAbundance = 1,
                               CorrelationScore = 0,
+                              MatchingAlgorithm = "closest peak",
                               AlternativeIonGroups = NULL,
                               AlternativeSequence = NULL,
                               AlternativeSpectrum = NULL,
@@ -120,6 +126,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     CalculateIsotopes = CalculateIsotopes,
     MinimumAbundance = MinimumAbundance,
     CorrelationScore = CorrelationScore,
+    MatchingAlgorithm = MatchingAlgorithm,
     AlternativeIonGroups = AlternativeIonGroups,
     AlternativeSequence = AlternativeSequence,
     AlternativeSpectrum = AlternativeSpectrum,
@@ -136,6 +143,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                                CalculateIsotopes,
                                MinimumAbundance,
                                CorrelationScore,
+                               MatchingAlgorithm,
                                AlternativeIonGroups,
                                AlternativeSequence = NULL,
                                AlternativeSpectrum = NULL,
@@ -212,6 +220,11 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   # Assert that Correlation Score is in the range of 0 and 1
   if (CorrelationScore > 1) {
     stop("CorrelationScore must be between 0 and 1.")
+  }
+  
+  # MatchingAlgorithm has only two options
+  if (MatchingAlgorithm %in% c("closest peak", "highest abundance") == FALSE) {
+    stop("MatchingAlgorithm must be 'closest peak' or 'highest abundance'")
   }
 
   # Assert that the alternative spectrum is a real spectrum
@@ -324,7 +337,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   
   # Load Glossary
   Glossary <- data.table::fread(
-    system.file("extdata", "Unimod_v20220602.csv", package = "ProteoMatch")
+    system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
   )
 
   #################################
@@ -525,8 +538,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     MolFormDF %>% dplyr::select(Sequence, `Molecular Formula`),
     by = "Sequence"
   )
-  
-  ###########
 
   #######################################
   ## 6. CALCULATE ISOTOPES (OPTIONAL)  ##
@@ -603,27 +614,51 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
   # Determine the theoertical mz tolerance
   Fragments$`M/Z Tolerance` <- Fragments$`M/Z` * (PPMThreshold / 1e6)
+  
+  if (MatchingAlgorithm == "closest peak") {
 
-  # For each theoretical peak, find the closest index in ms, where ms = theoretical
-  LeftIndex <- findInterval(Fragments$`M/Z`, PeakData$`M/Z`, rightmost.closed = FALSE, all.inside = TRUE)
-
-  # Compute mz differences (absolute) to closest element to each side, smaller to the left and next greater to the right:
-  Fragments$`Left Difference` <- abs(PeakData$`M/Z`[LeftIndex] - Fragments$`M/Z`)
-  Fragments$`Right Difference` <- abs(PeakData$`M/Z`[LeftIndex + 1] - Fragments$`M/Z`)
-  Fragments$`Closest Index` <- LeftIndex
-
-  # Set closest index as right side one, if difference is smaller:
-  RightIndexBest <- which(Fragments$`Right Difference` < Fragments$`Left Difference`)
-  Fragments$`Closest Index`[RightIndexBest] <- Fragments$`Closest Index`[RightIndexBest] + 1
-  Fragments$`M/Z Difference` <- abs(PeakData$`M/Z`[Fragments$`Closest Index`] - Fragments$`M/Z`)
-
-  # Keep only matches within the tolerance
-  Fragments <- Fragments[which(Fragments$`M/Z Difference` < Fragments$`M/Z Tolerance`), ]
-  Fragments$`M/Z Experimental` <- PeakData$`M/Z`[Fragments$`Closest Index`]
-  Fragments$`Intensity Experimental` <- PeakData$Intensity[Fragments$`Closest Index`]
-
-  # Remove non-necessary rows moving forward
-  Fragments <- Fragments %>% dplyr::select(-c(`Left Difference`, `Right Difference`, `Closest Index`, `M/Z Difference`))
+    # For each theoretical peak, find the closest index in ms, where ms = theoretical
+    LeftIndex <- findInterval(Fragments$`M/Z`, PeakData$`M/Z`, rightmost.closed = FALSE, all.inside = TRUE)
+  
+    # Compute mz differences (absolute) to closest element to each side, smaller to the left and next greater to the right:
+    Fragments$`Left Difference` <- abs(PeakData$`M/Z`[LeftIndex] - Fragments$`M/Z`)
+    Fragments$`Right Difference` <- abs(PeakData$`M/Z`[LeftIndex + 1] - Fragments$`M/Z`)
+    Fragments$`Closest Index` <- LeftIndex
+  
+    # Set closest index as right side one, if difference is smaller:
+    RightIndexBest <- which(Fragments$`Right Difference` < Fragments$`Left Difference`)
+    Fragments$`Closest Index`[RightIndexBest] <- Fragments$`Closest Index`[RightIndexBest] + 1
+    Fragments$`M/Z Difference` <- abs(PeakData$`M/Z`[Fragments$`Closest Index`] - Fragments$`M/Z`)
+  
+    # Keep only matches within the tolerance
+    Fragments <- Fragments[which(Fragments$`M/Z Difference` < Fragments$`M/Z Tolerance`), ]
+    Fragments$`M/Z Experimental` <- PeakData$`M/Z`[Fragments$`Closest Index`]
+    Fragments$`Intensity Experimental` <- PeakData$Intensity[Fragments$`Closest Index`]
+  
+    # Remove non-necessary rows moving forward
+    Fragments <- Fragments %>% dplyr::select(-c(`Left Difference`, `Right Difference`, `Closest Index`, `M/Z Difference`))
+    
+  } else if (MatchingAlgorithm == "highest abundance") {
+    
+    # Get the largest peak within each tolerance
+    Fragments <- Fragments %>%
+      dplyr::mutate(
+        MZLower = `M/Z` - `M/Z Tolerance`,
+        MZUpper = `M/Z` + `M/Z Tolerance`,
+        `M/Z Experimental` = purrr::map2(MZLower, MZUpper, function(low, high) {
+          sub <- PeakData[PeakData$`M/Z` >= low & PeakData$`M/Z` <= high,]
+          if (nrow(sub) == 0) {return(NA)} else {return(sub[which.max(sub$Abundance), "M/Z"])}
+        }) %>% unlist()
+      ) %>%
+      dplyr::filter(!is.na(`M/Z Experimental`)) %>%
+      dplyr::mutate(
+        `Intensity Experimental` = purrr::map(`M/Z Experimental`, function(x) {
+          PeakData[PeakData$`M/Z` == x, "Intensity"]
+        }) %>% unlist()
+      ) %>%
+      dplyr::select(-c(MZLower, MZUpper))
+    
+  }
 
   # Calculate PPM Error
   Fragments$`PPM Error` <- ((Fragments$`M/Z Experimental` - Fragments$`M/Z`) / Fragments$`M/Z`) * 1e6
@@ -725,6 +760,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   attr(Fragments, "pspecter")$IsotopesIncluded <- CalculateIsotopes
   attr(Fragments, "pspecter")$MinimumAbundance <- MinimumAbundance
   attr(Fragments, "pspecter")$CorrelationScoreFilter <- CorrelationScore
+  attr(Fragments, "pspecter")$MatchingAlgorithm <- MatchingAlgorithm
 
   # Add mass modified ions and PTMs if they are not NULL
   if (is.null(AlternativeIonGroups) == FALSE) {

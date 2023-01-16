@@ -11,7 +11,8 @@ convert_proforma(proforma)
 }
 \description{
 Converts proforma strings to a PTM object that get_matched_peaks uses
-    to calculate fragmentation patterns
+    to calculate fragmentation patterns. If there is no modification annotation,
+    the cleaned sequence is returned.
 }
 \examples{
 \dontrun{

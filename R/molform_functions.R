@@ -15,6 +15,9 @@
 #' # Generate a molecular formula object
 #' as.molform("C6H12O6")
 #' 
+#' # Duplicates should be added
+#' as.molform("CHCO3")
+#' 
 #' # This should fail, as 'Ot' and 'Lp' are not elements 
 #' as.molform("C6H12Ot5Lp2")
 #' 
@@ -32,9 +35,6 @@ as.molform <- function(MolForm) {
     stop("MolForm must be a single string.")
   }
   
-  # Split out elements 
-  Elements <- strsplit(MolForm, "-?[0-9]") %>% unlist() %>% .[. != ""]
-  
   # List acceptable elements
   AcceptableElements <- c(
     "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", 
@@ -46,27 +46,24 @@ as.molform <- function(MolForm) {
     "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", 
     "Fr", "Ra", "Ac", "Th", "Pa", "U"
   )
-   
-  # Check for non-established elements
-  NonEstablished <- Elements[Elements %in% AcceptableElements == FALSE]
-   
-  if (length(NonEstablished) != 0) {
-    stop(paste("The elements", paste0(NonEstablished, collapse = ", "), 
-                "are not supported at this time."))
+  
+  # Extract element names
+  AtomVec <- CHNOSZ::makeup(MolForm)
+  
+  # Make sure elements match 
+  if (!all(names(AtomVec) %in% AcceptableElements)) {
+    stop(paste("The following are not acceptable elements:",
+               paste0(names(AtomVec)[names(AtomVec) %in% AcceptableElements == FALSE], collapse = ", ")))
   }
-
+  
   #########################
   ## GENERATE ATTRIBUTES ##
   #########################
   
-  # Pull elemental counts
-  Counts <- strsplit(MolForm, "[[:alpha:]]") %>% unlist() %>% .[. != ""] %>% as.numeric()
-  Counts <- round(Counts)
-  
   # Fill an atomic vector
   AtomList <- rep(0, length(AcceptableElements))
   names(AtomList) <- AcceptableElements
-  AtomList[Elements] <- Counts
+  AtomList[names(AtomVec)] <- AtomVec
   
   # Add a class
   class(AtomList) <- c(class(AtomList), "molform")

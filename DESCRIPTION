@@ -1,7 +1,7 @@
 Package: pspecterlib
 Type: Package
 Title: PSpecteR Library - Visualization tools for top-down and bottom-up proteomics data
-Version: 1.0.0
+Version: 1.0.1
 Date: 2022-10-03
 Authors@R: c(person("David", "Degnan", email = "david.degnan@pnnl.gov", role = c("aut", "cre")))
 Description: Provides functionality to visually examine LC-MS top-down and bottom-up proteomics data. Supports reading various mass spectrometry files, labeling spectra with fragmenetation patterns, testing post-translational modifications, plotting where identified fragments map to reference sequences, and visualizing algorithmic output from database search tools (MSPathFinder) and metadata. 
@@ -30,7 +30,8 @@ Imports:
     tidyr,
     htmltools,
     RColorBrewer,
-    isopat
+    isopat,
+    CHNOSZ
 Suggests: 
     rmarkdown,
     knitr

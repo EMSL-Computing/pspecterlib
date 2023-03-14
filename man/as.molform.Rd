@@ -24,6 +24,9 @@ A list of length 92 (Hydrogen to Uranium) is stored in the attributes
 # Generate a molecular formula object
 as.molform("C6H12O6")
 
+# Duplicates should be added
+as.molform("CHCO3")
+
 # This should fail, as 'Ot' and 'Lp' are not elements 
 as.molform("C6H12Ot5Lp2")
 

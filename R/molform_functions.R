@@ -501,22 +501,31 @@ RelativeAbundances <- data.frame(
                 100, 0.0055, 0.72, 99.2745) / 100
 )
 
-#' Calculate an isotope profile using isopat
+#' Calculate an isotope profile 
 #' 
-#' @description Generates an isotope profile using [isopat](https://github.com/cran/isopat)
+#' @description Generates an isotope profile using isopat or Rdisop
 #' 
 #' @param molform An object of the as.molform class
+#' @param algorithm "isopat" uses the isopat package to calculate isotopes, while 
+#'    "Rdisop" uses the Rdisop package. Though more accurate, Rdisop has been
+#'    known to crash on Windows computers when called iteratively more than 1000
+#'    times. Default is Rdisop, though isopat is an alternative. 
 #' @param min_abundance Minimum abundance for calculating isotopes. Default is 1. 
 #' @param limit See ?isopat::isopattern for more details. 0.001 appears to calculate enough isotopes. 
 #' 
 #' @examples
 #' \dontrun{
 #' 
-#' calculate_iso_profile(molform = as.molform("C6H12O6"), min_abundance = 1)
+#' calculate_iso_profile(molform = as.molform("H389C259N65O63S2"), min_abundance = 1)
+#' 
+#' calculate_iso_profile(molform = as.molform("H389C259N65O63S2"), algorithm = "isopat", min_abundance = 1)
 #' 
 #' }
 #' @export
-calculate_iso_profile <- function(molform, min_abundance = 1, limit = 0.001) {
+calculate_iso_profile <- function(molform, 
+                                  algorithm = "Rdisop",
+                                  min_abundance = 1,
+                                  limit = 0.001) {
   
   ##################
   ## CHECK INPUTS ##
@@ -525,6 +534,11 @@ calculate_iso_profile <- function(molform, min_abundance = 1, limit = 0.001) {
   # Molform should be an object of the molform class
   if (!inherits(molform, "molform")) {
     stop("molform should be an object from the molform class.")
+  }
+  
+  # Check that the algorithm is an acceptable choice 
+  if (!algorithm %in% c("isopat", "Rdisop")) {
+    stop("algorithm must either be 'isopat' or 'Rdisop'.")
   }
   
   # Min abundance should be a numeric between 0 and 100 
@@ -542,24 +556,43 @@ calculate_iso_profile <- function(molform, min_abundance = 1, limit = 0.001) {
   # Collapse the molform
   MolForm <- collapse_molform(molform)
   
-  # Calculate isotope profile 
-  IsoProfile <- isopat::isopattern(RelativeAbundances, MolForm, limit) %>%
-    data.table::data.table() %>%
-    dplyr::select(mass, abundance) %>%
-    dplyr::mutate(
-      abundance = abundance / max(abundance) * 100,
-      massbin = round(mass)
-    ) %>%
-    dplyr::group_by(massbin) %>%
-    dplyr::filter(abundance == max(abundance) & abundance > min_abundance) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(-massbin) %>%
-    dplyr::mutate(
-      isotope = 0:(nrow(.)-1),
-      isolabel = paste("M+", isotope, sep = ""),
-      isolabel = ifelse(isolabel == "M+0", "M", isolabel)
-    )
-  
+  if (algorithm == "isopat") {
+    
+    # Calculate isotope profile with isopat function
+    IsoProfile <- isopat::isopattern(RelativeAbundances, MolForm, limit) %>%
+      data.table::data.table() %>%
+      dplyr::select(mass, abundance) %>%
+      dplyr::mutate(
+        abundance = abundance / max(abundance) * 100,
+        massbin = round(mass)
+      ) %>%
+      dplyr::group_by(massbin) %>%
+      dplyr::filter(abundance == max(abundance) & abundance > min_abundance) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(-massbin) %>%
+      dplyr::mutate(
+        isotope = 0:(nrow(.)-1),
+        isolabel = paste("M+", isotope, sep = ""),
+        isolabel = ifelse(isolabel == "M+0", "M", isolabel)
+      )
+    
+  } else if (algorithm == "Rdisop") {
+    
+    # Calculate isotope profile with Rdisop function
+    IsoProfile <- Rdisop::getMolecule(MolForm, maxisotopes = 20)$isotopes[[1]] %>%
+      t() %>%
+      data.table::data.table() %>%
+      dplyr::rename(mass = V1, abundance = V2) %>%
+      dplyr::mutate(abundance = abundance / max(abundance) * 100) %>% 
+      dplyr::filter(abundance >= min_abundance) %>%
+      dplyr::mutate(
+        isotope = 0:(nrow(.)-1),
+        isolabel = paste("M+", isotope, sep = ""),
+        isolabel = ifelse(isolabel == "M+0", "M", isolabel)
+      )
+    
+  }
+
   return(IsoProfile)
 
 }

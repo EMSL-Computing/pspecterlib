@@ -2,24 +2,36 @@
 % Please edit documentation in R/molform_functions.R
 \name{calculate_iso_profile}
 \alias{calculate_iso_profile}
-\title{Calculate an isotope profile using isopat}
+\title{Calculate an isotope profile}
 \usage{
-calculate_iso_profile(molform, min_abundance = 1, limit = 0.001)
+calculate_iso_profile(
+  molform,
+  algorithm = "Rdisop",
+  min_abundance = 1,
+  limit = 0.001
+)
 }
 \arguments{
 \item{molform}{An object of the as.molform class}
+
+\item{algorithm}{"isopat" uses the isopat package to calculate isotopes, while 
+"Rdisop" uses the Rdisop package. Though more accurate, Rdisop has been
+known to crash on Windows computers when called iteratively more than 1000
+times. Default is Rdisop, though isopat is an alternative.}
 
 \item{min_abundance}{Minimum abundance for calculating isotopes. Default is 1.}
 
 \item{limit}{See ?isopat::isopattern for more details. 0.001 appears to calculate enough isotopes.}
 }
 \description{
-Generates an isotope profile using [isopat](https://github.com/cran/isopat)
+Generates an isotope profile using isopat or Rdisop
 }
 \examples{
 \dontrun{
 
-calculate_iso_profile(molform = as.molform("C6H12O6"), min_abundance = 1)
+calculate_iso_profile(molform = as.molform("H389C259N65O63S2"), min_abundance = 1)
+
+calculate_iso_profile(molform = as.molform("H389C259N65O63S2"), algorithm = "isopat", min_abundance = 1)
 
 }
 }

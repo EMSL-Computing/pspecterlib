@@ -21,6 +21,9 @@
 #' # This should fail, as 'Ot' and 'Lp' are not elements 
 #' as.molform("C6H12Ot5Lp2")
 #' 
+#' # Negative elements are allowed (useful for modifications where elements are lost)
+#' as.molform("H-3N-1")
+#' 
 #' }
 #' 
 #' @export
@@ -35,6 +38,9 @@ as.molform <- function(MolForm) {
     stop("MolForm must be a single string.")
   }
   
+  # Split out elements 
+  CountElements <- CHNOSZ::count.elements(MolForm)
+  
   # List acceptable elements
   AcceptableElements <- c(
     "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", 
@@ -47,23 +53,25 @@ as.molform <- function(MolForm) {
     "Fr", "Ra", "Ac", "Th", "Pa", "U"
   )
   
-  # Extract element names
-  AtomVec <- CHNOSZ::makeup(MolForm)
+  # Check for non-established elements
+  NonEstablished <- names(CountElements)[names(CountElements) %in% AcceptableElements == FALSE]
   
-  # Make sure elements match 
-  if (!all(names(AtomVec) %in% AcceptableElements)) {
-    stop(paste("The following are not acceptable elements:",
-               paste0(names(AtomVec)[names(AtomVec) %in% AcceptableElements == FALSE], collapse = ", ")))
+  if (length(NonEstablished) != 0) {
+    stop(paste("The elements", paste0(NonEstablished, collapse = ", "), 
+               "are not supported at this time."))
   }
   
   #########################
   ## GENERATE ATTRIBUTES ##
   #########################
   
+  # Round counts
+  CountElements <- round(CountElements)
+  
   # Fill an atomic vector
   AtomList <- rep(0, length(AcceptableElements))
   names(AtomList) <- AcceptableElements
-  AtomList[names(AtomVec)] <- AtomVec
+  AtomList[names(CountElements)] <- CountElements
   
   # Add a class
   class(AtomList) <- c(class(AtomList), "molform")
@@ -79,7 +87,7 @@ as.molform <- function(MolForm) {
 #' 
 #' @examples
 #' \dontrun{
-#' print(as.molform("C6H12O6"))
+#' collapse_molform(as.molform("H12C6O6"))
 #' }
 #' @export
 collapse_molform <- function(molform) {
@@ -97,7 +105,16 @@ collapse_molform <- function(molform) {
   ## COLLAPSE MOLFORM ##
   ######################
   
+  # Order by Hill
+  HillOrder <- c("C", "H", names(molform) %>% .[. %in% c("H", "C") == FALSE] %>% sort())
+  
+  # The order should be C, H, alphabetical
+  molform <- molform[HillOrder]
+  
+  # Remove 0 
   collapsed <- molform[molform != 0]
+  
+  # Paste results
   return(paste0(names(collapsed), collapsed, sep = "", collapse = ""))
   
 }

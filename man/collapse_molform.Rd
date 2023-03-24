@@ -11,6 +11,6 @@ A simple printing option for an object of the as.molform class.
 }
 \examples{
 \dontrun{
-print(as.molform("C6H12O6"))
+collapse_molform(as.molform("H12C6O6"))
 }
 }

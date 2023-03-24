@@ -30,6 +30,9 @@ as.molform("CHCO3")
 # This should fail, as 'Ot' and 'Lp' are not elements 
 as.molform("C6H12Ot5Lp2")
 
+# Negative elements are allowed (useful for modifications where elements are lost)
+as.molform("H-3N-1")
+
 }
 
 }

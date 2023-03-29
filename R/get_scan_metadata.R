@@ -100,7 +100,7 @@ get_scan_metadata <- function(MSPath,
   if (file.exists(MSPath) == FALSE) {stop("MS file path must exist.")}
 
   # Assert that the MS file extension is mzML, mzXML, or raw
-  if (grepl(".mzML|.mzXML|.raw|.mshdf5", MSPath) == FALSE) {stop("MS file must be a mzML, mzXML, or raw")}
+  if (grepl(".mzML|.mzXML|.mzml|.mzxml|.raw", MSPath) == FALSE) {stop("MS file must be a mzML, mzXML, or raw")}
 
   # If ID Path is not NULL, check it
   if (is.null(IDPath) == FALSE) {
@@ -134,7 +134,7 @@ get_scan_metadata <- function(MSPath,
   MSFileType <- NULL
 
   # Read mzML or mzXML file
-  if (grepl(".mzML|.mzXML", MSPath)) {
+  if (grepl(".mzML|.mzXML|.mzml|.mzxml", MSPath)) {
 
     # Set the MS File Type to XML
     MSFileType <- "XML"

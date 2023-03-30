@@ -6,6 +6,8 @@
 #' @param ScanMetadata Object of the scan_metadata class from get_scan_metadata. Required.
 #' @param ScanNumber Integer indicating which scan number to pull the peak data. Required.
 #' @param MinAbundance Filter out peaks with an abundance below threshold. Ranges from 0-100. Default is 0.
+#' @param MinIntensity Filter out peaks with an intensity below the threshold. Default is 0. 
+#'     If MinAbundance is 0, then the minimum intensity filter will be applied. 
 #'
 #' @details
 #' The data.table outputted by this function contains both the M/Z and Intensity vectors of the spectra.
@@ -38,7 +40,8 @@
 #' @export
 get_peak_data <- function(ScanMetadata,
                           ScanNumber,
-                          MinAbundance = 0) {
+                          MinAbundance = 0,
+                          MinIntensity = 0) {
 
   ##################
   ## CHECK INPUTS ##
@@ -66,12 +69,17 @@ get_peak_data <- function(ScanMetadata,
 
   }
 
-  # Assert that Intensity Minimum is an integer
+  # Assert that the Abundance Minimum is a numeric value
   if (!is.numeric(MinAbundance)) {
     stop("MinAbundance needs to be a numeric value.")
   }
   if (MinAbundance < 0 | MinAbundance > 100) {
     stop("MinAbundance needs to range between 0 and 100.")
+  }
+  
+  # Assert that the Intensity Minimum is a numeric value
+  if (!is.numeric(MinIntensity)) {
+    stop("MinIntensity should be a number.")
   }
 
   ####################
@@ -118,8 +126,12 @@ get_peak_data <- function(ScanMetadata,
 
   # Remove peaks that do no meet the minimum intensity value
   NumberPeaksPostFilter <- TotalNumberPeaks
-  if (MinAbundance > 0) {
+  
+  if (MinAbundance != 0) {
     Peaks <- subset(Peaks, Abundance >= MinAbundance)
+    NumberPeaksPostFilter <- nrow(Peaks)
+  } else {
+    Peaks <- subset(Peaks, Intensity >= MinIntensity)
     NumberPeaksPostFilter <- nrow(Peaks)
   }
 

@@ -4,7 +4,7 @@
 \alias{get_peak_data}
 \title{Extracts peak data from a raw or mzML file}
 \usage{
-get_peak_data(ScanMetadata, ScanNumber, MinAbundance = 0)
+get_peak_data(ScanMetadata, ScanNumber, MinAbundance = 0, MinIntensity = 0)
 }
 \arguments{
 \item{ScanMetadata}{Object of the scan_metadata class from get_scan_metadata. Required.}
@@ -12,6 +12,9 @@ get_peak_data(ScanMetadata, ScanNumber, MinAbundance = 0)
 \item{ScanNumber}{Integer indicating which scan number to pull the peak data. Required.}
 
 \item{MinAbundance}{Filter out peaks with an abundance below threshold. Ranges from 0-100. Default is 0.}
+
+\item{MinIntensity}{Filter out peaks with an intensity below the threshold. Default is 0. 
+If MinAbundance is 0, then the minimum intensity filter will be applied.}
 }
 \description{
 Extract the M/Z and Intensity data for a specific scan number from

@@ -13,6 +13,7 @@ get_matched_peaks(
   MinimumAbundance = 1,
   CorrelationScore = 0,
   MatchingAlgorithm = "closest peak",
+  IsotopeAlgorithm = "Rdisop",
   AlternativeIonGroups = NULL,
   AlternativeSequence = NULL,
   AlternativeSpectrum = NULL,
@@ -43,6 +44,11 @@ peak" implementation chooses the peak closest to the true M/Z value within the P
 and "highest abundance" chooses the highest intensity peak within the PPM window. "closest peak"
 is recommended for peaks that have been peak picked with an external tool, 
 and "highest abundance" is recommended for noisy datasets or those with many peaks.}
+
+\item{IsotopeAlgorithm}{"isopat" uses the isopat package to calculate isotopes, while 
+"Rdisop" uses the Rdisop package. Though more accurate, Rdisop has been known to 
+crash on Windows computers when called iteratively more than 1000 times. 
+Default is Rdisop, though isopat is an alternative.}
 
 \item{AlternativeIonGroups}{A "modified_ion" object from "make_mass_modified ions." Default is NULL.}
 

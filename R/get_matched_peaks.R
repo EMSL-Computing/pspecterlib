@@ -20,6 +20,10 @@
 #'    and "highest abundance" chooses the highest intensity peak within the PPM window. "closest peak"
 #'    is recommended for peaks that have been peak picked with an external tool, 
 #'    and "highest abundance" is recommended for noisy datasets or those with many peaks. 
+#' @param IsotopeAlgorithm "isopat" uses the isopat package to calculate isotopes, while 
+#'     "Rdisop" uses the Rdisop package. Though more accurate, Rdisop has been known to 
+#'     crash on Windows computers when called iteratively more than 1000 times. 
+#'     Default is Rdisop, though isopat is an alternative.
 #' @param AlternativeIonGroups A "modified_ion" object from "make_mass_modified ions." Default is NULL.
 #' @param AlternativeSequence A proforma-acceptable string to calculate the literature 
 #'    fragments. The default is the sequence matched in the ScanMetadata file. Default is NULL.
@@ -112,6 +116,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                               MinimumAbundance = 1,
                               CorrelationScore = 0,
                               MatchingAlgorithm = "closest peak",
+                              IsotopeAlgorithm = "Rdisop",
                               AlternativeIonGroups = NULL,
                               AlternativeSequence = NULL,
                               AlternativeSpectrum = NULL,
@@ -127,6 +132,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     MinimumAbundance = MinimumAbundance,
     CorrelationScore = CorrelationScore,
     MatchingAlgorithm = MatchingAlgorithm,
+    IsotopeAlgorithm = IsotopeAlgorithm,
     AlternativeIonGroups = AlternativeIonGroups,
     AlternativeSequence = AlternativeSequence,
     AlternativeSpectrum = AlternativeSpectrum,
@@ -144,6 +150,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                                MinimumAbundance,
                                CorrelationScore,
                                MatchingAlgorithm,
+                               IsotopeAlgorithm,
                                AlternativeIonGroups,
                                AlternativeSequence = NULL,
                                AlternativeSpectrum = NULL,
@@ -559,7 +566,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     IsotopeList <- do.call(dplyr::bind_rows, lapply(MolForms, function(MolForm) {
       
       # Get Isotope Relative Abundances
-      IsotopeResults <- calculate_iso_profile(as.molform(MolForm), min_abundance = MinimumAbundance)
+      IsotopeResults <- calculate_iso_profile(as.molform(MolForm), algorithm = IsotopeAlgorithm, min_abundance = MinimumAbundance)
       IsotopeResults$`Molecular Formula` = MolForm
       return(IsotopeResults)
       

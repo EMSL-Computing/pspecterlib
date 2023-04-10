@@ -50,6 +50,11 @@ MS1_Interactive[[1]]
 # See a next MS1 statically
 MS1_Static[[2]]
 
+# Try with a modified sequence 
+MS1_Interactive2 <- ms1_plots(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728, Window = 5,
+                              Sequence = "IGA[Acetyl]VGGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIGAGLNK", 
+                              Interactive = TRUE, IsotopicPercentageFilter = 10)
+
 }
 
 }

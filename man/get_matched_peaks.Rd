@@ -132,7 +132,8 @@ BU_Match2 <- get_matched_peaks(
 BU_Match3 <- get_matched_peaks(
  ScanMetadata = BU_ScanMetadata,
  PeakData = BU_Peak, 
- AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "+", AMU_Change = 1.00727647)
+ IonGroups = "b",
+ AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "^", AMU_Change = 1.00727647)
 )
 
 

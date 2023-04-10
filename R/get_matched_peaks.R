@@ -97,7 +97,8 @@
 #' BU_Match3 <- get_matched_peaks(
 #'  ScanMetadata = BU_ScanMetadata,
 #'  PeakData = BU_Peak, 
-#'  AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "+", AMU_Change = 1.00727647)
+#'  IonGroups = "b",
+#'  AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "^", AMU_Change = 1.00727647)
 #' )
 #' 
 #'
@@ -383,7 +384,18 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       getIon <- AlternativeIonGroups$Ion[row]
 
       # Subset fragments
-      subFrag <- Fragments[Fragments$Type == getIon,]
+      subFrag <- MSnbase::calculateFragments(sequence = Sequence, type = getIon,
+                                             z = 1:PrecursorCharge) %>% data.table::data.table()
+      
+      # Rename Fragments
+      colnames(subFrag) <- c("M/Z", "Ion", "Type", "Position", "Z", "Sequence")
+      
+      # Exclude N-deamidated and C-dehydrated specific modifications
+      subFrag <- dplyr::filter(subFrag, !grepl("[.*_]", subFrag$Type))
+      
+      # Label the N-position. Remember that x,y,z fragments are determined from the C-terminus
+      subFrag$`N Position` <- ifelse(subFrag$Type %in% c("a", "b", "c"),
+                                     subFrag$Position, (nchar(Sequence) + 1) - Fragments$Position)
 
       # Proceed only if there's any fragments
       if (nrow(subFrag) > 0) {

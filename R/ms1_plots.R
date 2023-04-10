@@ -27,6 +27,11 @@
 #'
 #' # See a next MS1 statically
 #' MS1_Static[[2]]
+#' 
+#' # Try with a modified sequence 
+#' MS1_Interactive2 <- ms1_plots(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728, Window = 5,
+#'                               Sequence = "IGA[Acetyl]VGGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIGAGLNK", 
+#'                               Interactive = TRUE, IsotopicPercentageFilter = 10)
 #'
 #' }
 #'
@@ -156,6 +161,12 @@ ms1_plots <- function(ScanMetadata,
 
   # Get isotope distribution for the input sequence
   collapseFUN <- function(x) {paste0(names(x), x, collapse = "")}
+  
+  #browser()
+  
+  # Convert ProForma
+  
+  
   GetMolecule <- BRAIN::getAtomsFromSeq(Sequence) %>% collapseFUN() %>% Rdisop::getMolecule()
 
   # Pull out the exact mass that was inputted into RDisop, and use that to determine

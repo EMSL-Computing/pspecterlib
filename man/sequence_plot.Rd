@@ -8,7 +8,8 @@ sequence_plot(
   MatchedPeaks,
   IncludeIsotopes = FALSE,
   RemoveChargeAnnotation = FALSE,
-  WrapLength = 10
+  RemoveModification = FALSE,
+  WrapLength = 8
 )
 }
 \arguments{
@@ -18,6 +19,9 @@ sequence_plot(
 
 \item{RemoveChargeAnnotation}{A logical to indicate whether the annotation for charge states should be included
 in the plot. This does not remove charge states; rather, the annotation for charge states. Default is FALSE.}
+
+\item{RemoveModification}{A logical to indicate whether the modification on the residue
+should be removed in the plot. Default is FALSE.}
 
 \item{WrapLength}{An integer to index how many letters should be printed before wrapping.
 Default is 10, but the value will vary depending on the size of your visualization.}
@@ -32,10 +36,14 @@ A static plot with the sequence annotated with the lowest ppm error fragment
 # Test bottom up data
 BU_Peak <- get_peak_data(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728)
 BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak)
+BU_Match2 <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak, AlternativeSequence = "IGA[Acetyl]VGGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIGAGLNK")
 
 # Make plots
 sequence_plot(MatchedPeaks = BU_Match)
 sequence_plot(MatchedPeaks = BU_Match, RemoveChargeAnnotation = TRUE)
+sequence_plot(MatchedPeaks = BU_Match2)
+
+
 }
 
 }

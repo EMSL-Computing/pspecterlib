@@ -9,7 +9,8 @@ sequence_plot(
   IncludeIsotopes = FALSE,
   RemoveChargeAnnotation = FALSE,
   RemoveModification = FALSE,
-  WrapLength = 8
+  WrapLength = 8,
+  LabelSize = 3
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ should be removed in the plot. Default is FALSE.}
 
 \item{WrapLength}{An integer to index how many letters should be printed before wrapping.
 Default is 10, but the value will vary depending on the size of your visualization.}
+
+\item{LabelSize}{The size of the PTM labels. Default is 3.}
 }
 \description{
 A static plot with the sequence annotated with the lowest ppm error fragment

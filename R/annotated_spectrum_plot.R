@@ -93,7 +93,7 @@ annotated_spectrum_plot <- function(PeakData,
                    "x-" = "pink3", "x--" = "pink3", "x^" = "pink3", "x^^" = "pink3",
                    "y" = "red", "y+" = "red", "y++" = "red",
                    "y-" = "red", "y--" = "red", "y^" = "red", "y^^" = "red",
-                   "z" = "red", "z+" = "darkorange", "z++" = "darkorange",
+                   "z" = "darkorange", "z+" = "darkorange", "z++" = "darkorange",
                    "z-" = "darkorange", "z--" = "darkorange", "z^" = "darkorange", "z^^" = "darkorange",
                    "Spectrum" = "black")
 

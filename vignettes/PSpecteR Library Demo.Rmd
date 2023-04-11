@@ -1,7 +1,7 @@
 ---
 title: "PSpecter Library Demo"
 author: "Degnan, David J"
-date: "October 7th, 2022"
+date: "April 1, 2023"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Bottom_Up_Example}
@@ -362,9 +362,7 @@ add_molforms(Molecule1, Molecule2, CapNegatives = TRUE) %>% # Cap Negatives to p
 ```
 
 
-```{r formula example 2}
-add_molecules(Molecule1, Molecule2, CapNegatives = FALSE)$Formula
-```
+
 
 
 

@@ -4,10 +4,12 @@
 \alias{is_sequence}
 \title{Ensures a string is an acceptable amino acid sequence}
 \usage{
-is_sequence(Sequence)
+is_sequence(Sequence, Message = FALSE)
 }
 \arguments{
 \item{Sequence}{An amino acid sequence which should be a single string. Required.}
+
+\item{Message}{Explain why the test failed}
 }
 \description{
 A simple test function to ensure the provided sequence is an

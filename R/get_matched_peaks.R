@@ -484,6 +484,11 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
   # Trim down potential fragments to match
   Fragments <- cleanCalculatedFragments(Fragments)
+  
+  if (nrow(Fragments) == 0) {
+    message("No peaks matched.")
+    return(NULL)
+  }
 
   ###############################
   ## 5. ADD MOLECULAR FORMULAS ##
@@ -508,7 +513,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     # Step one: get sequence and modifications
     Seq <- MolFormDF$Sequence[row]
     Mod <- MolFormDF$Modifications[row]
-
+    
     # Step two: convert sequence to molecule object
     Atoms <- get_aa_molform(Seq)
 

@@ -7,23 +7,11 @@ test_that("Testing sequence checks", {
   # Nothing should return a FALSE
   expect_false(is_sequence(NULL))
 
-  # A non-string should return an error
-  expect_error(
-    is_sequence(1),
-    "The provided Sequence must be a single string. Example: TEST"
-  )
-
-  # A vector longer than 1 should return an error
-  expect_error(
-    is_sequence(c("TEST", "TEST")),
-    "The provided Sequence must be a single string. Example: TEST"
-  )
+  # A non-string should return a FALSE
+  expect_false(is_sequence(1))
 
   # Spaces should return FALSE
   expect_false(is_sequence("TEST TEST"))
-
-  # Sequence should not have brackets and should return FALSE
-  expect_false(is_sequence("TEST[ACETYL]"))
 
   # Non-letters should return FALSE
   expect_false(is_sequence("TEST.THAT"))
@@ -33,8 +21,18 @@ test_that("Testing sequence checks", {
 
   # Sequences cannot contain B, J, O, U, or X
   expect_false(is_sequence("TESTB"))
+  
+  # Sequences with brackets must be in glossary if not numeric
+  expect_false(is_sequence("TEST[55.32.]"))
+  expect_false(is_sequence("TOEST[Acetyl]"))
 
   # Otherwise, the sequence should be TRUE
   expect_true(is_sequence("TESTTHAT"))
+  
+  # Sequence can have brackets
+  expect_true(is_sequence("TEST[Acetyl]"))
+  
+  # Ultimate test
+  expect_true(is_sequence("T[55]E[Methyl]S[Acetyl]T[23.2345]"))
 
 })

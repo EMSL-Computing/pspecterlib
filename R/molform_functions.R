@@ -620,6 +620,7 @@ calculate_iso_profile <- function(molform,
 #'    acceptable amino acid sequence. ProForma sequences are accepted.
 #'
 #' @param Sequence An amino acid sequence which should be a single string. Required.
+#' @param Message Explain why the test failed 
 #'
 #' @details The output will either be a "TRUE" acceptable sequence, or "FALSE"
 #'    unacceptable sequence. An acceptable sequence cannot be NULL,
@@ -644,20 +645,29 @@ calculate_iso_profile <- function(molform,
 #' }
 #'
 #' @export
-is_sequence <- function(Sequence) {
+is_sequence <- function(Sequence, Message = FALSE) {
   
   ###########################
   ## RUN THROUGH THE TESTS ##
   ###########################
   
   # If sequence is NULL, return FALSE
-  if (is.null(Sequence) || is.na(Sequence) || Sequence == "") {return(FALSE)}
+  if (is.null(Sequence) || is.na(Sequence) || Sequence == "") {
+    if (Message) {message("No sequence provided.")}
+    return(FALSE)
+  }
     
   # Test that the square brackets are added
-  if (grepl("\\[", Sequence) & !grepl("\\]", Sequence) | !grepl("\\[", Sequence) & grepl("\\]", Sequence)) {return(FALSE)}
+  if (grepl("\\[", Sequence) & !grepl("\\]", Sequence) | !grepl("\\[", Sequence) & grepl("\\]", Sequence)) {
+    if (Message) {message("Square bracket pairs must be completed.")}
+    return(FALSE)
+  }
         
   # No spaces 
-  if (grepl("[[:space:]]", Sequence)) {return(FALSE)} 
+  if (grepl("[[:space:]]", Sequence)) {
+    if (Message) {message("Space not permitted.")}
+    return(FALSE)
+  } 
           
   # Extract modifications 
   if (grepl("\\[", Sequence)) {
@@ -675,24 +685,39 @@ is_sequence <- function(Sequence) {
     Response <- lapply(Modifications, function(mod) {
       
       # Test if numeric 
-      if (suppressWarnings(is.na(as.numeric(mod)))) {return(TRUE)} else {
+      if (suppressWarnings(!is.na(as.numeric(mod)))) {return(TRUE)} else {
         return(mod %in% Glossary$Modification)
       }
        
     }) %>% unlist() 
       
-    if (!any(Response)) {return(FALSE)}
+    if (!any(Response)) {
+      if (Message) {message("Unrecognized modification format. See the Glossary for more details.")}
+      return(FALSE)
+    }
     
     Sequence <- Split[c(TRUE, FALSE)] %>% paste0(collapse = "")
     
   }
   
   # Test amino acids   
-  if (nchar(Sequence) < 2) {return(FALSE)}
+  if (nchar(Sequence) < 2) {
+    if (Message) {message("The sequence needs to have more than 1 character.")}
+    return(FALSE)
+  }
   
+  # Test the sequence is only letters
+  if (grepl("[^[:alpha:]]", Sequence)) {
+    if (Message) {message("The sequence with modifications and their brackets removed should be only letters.")}
+    return(FALSE)
+  }
+    
   # Test the sequence does not contain incorrect amino acids 
-  if (grepl("[BbJjOoUuXxZz]", Sequence)) {return(FALSE)}
-  
+  if (grepl("[BbJjOoUuXxZz]", Sequence)) {
+    if (Message) {message("B, J, O, U, X, and Z are not acceptable amino acids at this time.")}
+    return(FALSE)
+  }
+
   # Unless something else comes up that needs to expand this function, then at
   # this step, it is an acceptable sequence.
   return(TRUE)

@@ -10,7 +10,6 @@ ms1_plots(
   Window = 5,
   Sequence = NULL,
   IsotopicPercentageFilter = 10,
-  RemoveNegativeIsotopes = TRUE,
   Interactive = TRUE
 )
 }
@@ -24,8 +23,6 @@ ms1_plots(
 \item{Sequence}{Protein sequence for annotating experimental M/Z, if different from the ID data. Default is NULL.}
 
 \item{IsotopicPercentageFilter}{Percentage written as a number between 0-100 to filter potential isotopes by relative abundance. Default is 10.}
-
-\item{RemoveNegativeIsotopes}{A True/False to indicate whether isotopes before M should be removed. Default is TRUE.}
 
 \item{Interactive}{If True, an interactive plotly graphic will be returned. If False, a static ggplot graphic will be returned. Default is FALSE.}
 }

@@ -11,6 +11,7 @@
 #'    should be removed in the plot. Default is FALSE. 
 #' @param WrapLength An integer to index how many letters should be printed before wrapping.
 #'    Default is 10, but the value will vary depending on the size of your visualization.
+#' @param LabelSize The size of the PTM labels. Default is 3. 
 #'
 #' @examples
 #' \dontrun{
@@ -33,7 +34,8 @@ sequence_plot <- function(MatchedPeaks,
                           IncludeIsotopes = FALSE,
                           RemoveChargeAnnotation = FALSE,
                           RemoveModification = FALSE, 
-                          WrapLength = 8) {
+                          WrapLength = 8,
+                          LabelSize = 3) {
 
   ##################
   ## CHECK INPUTS ##
@@ -173,7 +175,7 @@ sequence_plot <- function(MatchedPeaks,
     # Change name to modification
     PTM_Anno$PTM <- attributes(MatchedPeaks)$pspecter$PTMs$Name
     
-    SeqPlot <- SeqPlot + ggplot2::geom_label(data = PTM_Anno, ggplot2::aes(x = x, y = y, label = PTM), size = 3)
+    SeqPlot <- SeqPlot + ggplot2::geom_label(data = PTM_Anno, ggplot2::aes(x = x, y = y, label = PTM), size = LabelSize)
     
   }
 

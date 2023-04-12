@@ -173,7 +173,7 @@ sequence_plot <- function(MatchedPeaks,
     PTM_Anno$x <- PTM_Anno$x + 0.25
     
     # Change name to modification
-    PTM_Anno$PTM <- attributes(MatchedPeaks)$pspecter$PTMs$Name
+    PTM_Anno$PTM <- substr(attributes(MatchedPeaks)$pspecter$PTMs$Name, 1, 6)
     
     SeqPlot <- SeqPlot + ggplot2::geom_label(data = PTM_Anno, ggplot2::aes(x = x, y = y, label = PTM), size = LabelSize)
     

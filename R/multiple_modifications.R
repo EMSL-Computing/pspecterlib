@@ -118,6 +118,10 @@ multiple_modifications <- function(Sequence, Modification) {
   ## CHECK MODS ##
   ################
   
+  Glossary <- data.table::fread(
+    system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+  )
+  
   # Create a dataframe that is easier to check
   checkMod <- do.call(rbind, Mods)
   
@@ -137,11 +141,6 @@ multiple_modifications <- function(Sequence, Modification) {
   
   # Generate all combinations of PTMs
   allCombs <- expand.grid(lapply(Mods, function(x) {1:nrow(x)}))
-  
-  # If there are more than 300 combinations to test, error out 
-  if (nrow(allCombs) > 300) {
-    stop("Isoforma currently only supports 300 modifications or less at a time.")
-  }
   
   ###############################
   ## GENERATE PROFORMA STRINGS ##

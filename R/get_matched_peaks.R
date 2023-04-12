@@ -287,7 +287,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       sort()
     if (length(toRm) > 0) {Fragments <- Fragments[-toRm,]}
 
-    
     # First, remove peaks that would never match 
     Fragments <- Fragments %>%
       dplyr::mutate(
@@ -299,6 +298,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       ) %>%
       dplyr::filter(Within == TRUE) %>%
       dplyr::select(-c(`PPM Low`, `PPM High`, Within))
+  
     
     # Second take the minimum charge peak within each ppm bin to prioritize smaller charges. 
     # BinVal <- 0 # This is to count bins
@@ -514,12 +514,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   MolFormDF <- Fragments %>%
     dplyr::select(Sequence, Modifications) %>%
     unique()
-  
-  # Remove sequences with a single amino acid
-  MolFormDF <- MolFormDF %>% 
-    dplyr::mutate(Count = nchar(Sequence) > 1) %>% 
-    dplyr::filter(Count) %>% 
-    dplyr::select(-Count)
 
   # Iterate through, getting sequences and modifications and combining them
   MolFormDF$`Molecular Formula` <- lapply(1:nrow(MolFormDF), function(row) {

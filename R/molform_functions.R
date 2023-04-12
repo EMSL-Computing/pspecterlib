@@ -700,12 +700,6 @@ is_sequence <- function(Sequence, Message = FALSE) {
     
   }
   
-  # Test amino acids   
-  if (nchar(Sequence) < 2) {
-    if (Message) {message("The sequence needs to have more than 1 character.")}
-    return(FALSE)
-  }
-  
   # Test the sequence is only letters
   if (grepl("[^[:alpha:]]", Sequence)) {
     if (Message) {message("The sequence with modifications and their brackets removed should be only letters.")}

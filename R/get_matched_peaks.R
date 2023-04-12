@@ -330,7 +330,21 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
   # Get the sequence object 
   if (is.null(AlternativeSequence)) {
-    Sequence_Object <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Sequence"] %>% unlist() %>% convert_proforma()
+    
+    ExtractSeq <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Sequence"] %>% unlist()
+    
+    if (length(ExtractSeq) > 1) {
+      message(paste("Multiple sequences detected. Select one and pass it to AlternativeSequence. Your options are:", paste(ExtractSeq, collapse = ", ")))
+      return(NULL)
+    }
+    
+    if (is.na(ExtractSeq)) {
+      message("Sequence is NA")
+      return(NULL)
+    }
+    
+    Sequence_Object <- convert_proforma(ExtractSeq)
+    
   } else {Sequence_Object <- convert_proforma(AlternativeSequence)}
   
   # Pull the sequence
@@ -340,7 +354,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   
   # Get the precursor charge
   if (is.null(AlternativeCharge)) {
-    PrecursorCharge <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor Charge"] %>% unlist()
+    PrecursorCharge <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor Charge"] %>% unlist() %>% head(1)
   } else {PrecursorCharge <- AlternativeCharge}
   
   # Load Glossary

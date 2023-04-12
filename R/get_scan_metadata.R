@@ -226,15 +226,49 @@ get_scan_metadata <- function(MSPath,
 
   } else {
 
-    # Pull ID data for both Protein Spectra MatcheS (PSMS), and score data
+    # Pull ID data for both Protein Spectra Matches (PSMS), and score data
     ID <- mzR::openIDfile(IDPath)
     PSMS <- ID %>% mzR::psms() %>% data.table::data.table()
-    Score <- NULL
+    Score <- ID %>% mzR::score() %>% data.table::data.table()
+    MergedGroup <- dplyr::left_join(PSMS, Score, by = "spectrumID") %>% unique()
 
+    # If modifications exist, convert amino acid sequences to ProForma strings
+    if (nrow(mzR::modifications(ID)) > 0) {
+      
+      # Pull and format modifications
+      MOD <- mzR::modifications(ID) %>%
+        dplyr::mutate(
+          spectrumID = spectrumID, 
+          Proteoform = gsub("Pep_|[0-9]", "", peptideRef), # Remove extra text and numerics from peptide references
+          Name = lapply(1:length(spectrumID), function(pos) {
+            theName <- .$name[pos]
+            ifelse(is.null(theName) || is.na(theName) || theName != "", theName, .$mass[pos])
+          }) %>% unlist()
+        ) %>%
+        dplyr::select(spectrumID, Proteoform, Name) %>%
+        unique() %>%
+        dplyr::mutate(
+          Proteoform = lapply(1:length(spectrumID), function(pos) {
+            fix <- gsub("+", paste0("[", .$Name[pos], "]"), .$Proteoform[pos], fixed = T)
+            fix <- gsub("-", paste0("[", .$Name[pos], "]"), fix, fixed = T)
+            return(fix)
+          }) %>% unlist()
+        )  %>%
+        dplyr::select(-Name)
+      
+      # Merged MODs and replace sequences with non NA Proteoforms
+      MergedGroup <- dplyr::left_join(MergedGroup, MOD, by = "spectrumID") %>% 
+        unique() %>%
+        dplyr::mutate(sequence = ifelse(is.na(Proteoform), sequence, Proteoform))
+      
+    } 
+    
+    
+    
     # Try to pull Score Data, and if it doesn't work, extract the text. Note: will add back
     # in when I have a tangible, shareable example.
     #tryCatch({
-      Score <- ID %>% mzR::score() %>% data.table::data.table()
+    
     #},
 
     #error = function(e) {
@@ -263,39 +297,24 @@ get_scan_metadata <- function(MSPath,
     #})
 
     # Q Value should be converted to NA if NULL
-    if (is.null(Score$MS.GF.QValue)) {Score$MS.GF.QValue <- NA}
+    if (is.null(MergedGroup$MS.GF.QValue)) {MergedGroup$MS.GF.QValue <- NA}
 
     # Rename columns
     IDData <- data.table::data.table(
-      "Scan Number" = PSMS$acquisitionNum,
-      "Sequence" = PSMS$sequence,
-      "Protein ID" = PSMS$DatabaseAccess,
-      "Calculated Mass" = round(PSMS$experimentalMassToCharge, 4),
-      "Experimental Mass" = round(PSMS$calculatedMassToCharge, 4),
-      "Score" = Score$MS.GF.SpecEValue,
-      "Q Value" = round(as.numeric(Score$MS.GF.QValue), 2),
-      "Decoy" = PSMS$isDecoy,
-      "Description" = PSMS$DatabaseDescription,
-      "Peptide Start Position" = PSMS$start
+      "Scan Number" = MergedGroup$acquisitionNum,
+      "Sequence" = MergedGroup$sequence,
+      "Protein ID" = MergedGroup$DatabaseAccess,
+      "Calculated Mass" = round(MergedGroup$experimentalMassToCharge, 4),
+      "Experimental Mass" = round(MergedGroup$calculatedMassToCharge, 4),
+      "Score" = MergedGroup$MS.GF.SpecEValue,
+      "Q Value" = round(as.numeric(MergedGroup$MS.GF.QValue), 2),
+      "Decoy" = MergedGroup$isDecoy,
+      "Description" = MergedGroup$DatabaseDescription,
+      "Peptide Start Position" = MergedGroup$start
     )
 
-    # Pull and format modification data to be scan number and "Name@Position=MW & Name2@Position2=MW2" etc
-    AllMods <- mzR::modifications(ID) %>%
-      dplyr::mutate(
-        `Scan Number` = lapply(spectrumID, function(x) {strsplit(x, "scan=") %>% unlist() %>% tail(1) }) %>% unlist() %>% as.numeric(),
-        Modifications = paste0(name, "@", location, "=", round(mass, 6))
-      ) %>%
-      dplyr::select(c(`Scan Number`, Modifications)) %>%
-      dplyr::group_by(`Scan Number`) %>%
-      dplyr::summarise(Modifications = paste(Modifications, collapse = " & "))
-
-    # Merge all Mods to ID data
-    if (nrow(AllMods) > 0) {
-      IDData <- merge(IDData, AllMods, by = "Scan Number", all = TRUE)
-    }
-
     # Merge ScanMetdata and IDData
-    ScanMetadata <- merge(ScanMetadata, IDData, by = "Scan Number", all = TRUE)
+    ScanMetadata <- merge(ScanMetadata, IDData, by = "Scan Number", all = TRUE) %>% unique()
 
     # Order by Score
     ScanMetadata <- ScanMetadata[order(ScanMetadata$Score),]

@@ -170,7 +170,7 @@ annotated_spectrum_plot <- function(PeakData,
       # Set the base spectrum
       BaseSpectrum <- ggplot2::ggplot(Peaks, ggplot2::aes(x = `M/Z Experimental`,
         y = Intensity, color = Type, label = Ion)) +
-        ggplot2::theme_bw() + ggplot2::geom_line(size = 1) +
+        ggplot2::theme_bw() + ggplot2::geom_line(linewidth = 1) +
         ggplot2::scale_color_manual(values = ColorVector) + ggplot2::xlab(bquote(italic(.("M/Z")))) +
         ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
 

@@ -83,8 +83,19 @@ annotated_spectrum_plot <- function(PeakData,
   ###############
 
   # Set color vector
-  ColorVector <- c("a" = "forestgreen", "b" = "steelblue", "c" = "darkviolet",
-                   "x" = "pink3", "y" = "red", "z" = "darkorange", "Spectrum" = "black")
+  ColorVector <- c("a" = "forestgreen", "a+" = "forestgreen", "a++" = "forestgreen",
+                   "a-" = "forestgreen", "a--" = "forestgreen", "a^" = "forestgreen", "a^^" = "forestgreen",
+                   "b" = "steelblue", "b+" = "steelblue", "b++" = "steelblue",
+                   "b-" = "steelblue", "b--" = "steelblue", "b^" = "steelblue", "b^^" = "steelblue",
+                   "c" = "darkviolet", "c+" = "darkviolet", "c++" = "darkviolet",
+                   "c-" = "darkviolet", "c--" = "darkviolet", "c^" = "darkviolet", "c^^" = "darkviolet",
+                   "x" = "pink3", "x+" = "pink3", "x++" = "pink3",
+                   "x-" = "pink3", "x--" = "pink3", "x^" = "pink3", "x^^" = "pink3",
+                   "y" = "red", "y+" = "red", "y++" = "red",
+                   "y-" = "red", "y--" = "red", "y^" = "red", "y^^" = "red",
+                   "z" = "darkorange", "z+" = "darkorange", "z++" = "darkorange",
+                   "z-" = "darkorange", "z--" = "darkorange", "z^" = "darkorange", "z^^" = "darkorange",
+                   "Spectrum" = "black")
 
   # Return just the spectrum if no fragments identified
   if (is.null(MatchedPeaks)) {
@@ -132,7 +143,7 @@ annotated_spectrum_plot <- function(PeakData,
     Peaks <- merge(Peaks, FragmentTable, by = "M/Z Experimental", all = TRUE)
 
     # Set general type to a string
-    Peaks$`General Type`[is.na(Peaks$`General Type`)] <- "Spectrum"
+    Peaks$Type[is.na(Peaks$Type)] <- "Spectrum"
 
     # Remove ion at 0 peaks
     Peaks[Peaks$Intensity == 0, "Ion"] <- NA
@@ -158,8 +169,8 @@ annotated_spectrum_plot <- function(PeakData,
 
       # Set the base spectrum
       BaseSpectrum <- ggplot2::ggplot(Peaks, ggplot2::aes(x = `M/Z Experimental`,
-        y = Intensity, color = `General Type`, label = Ion)) +
-        ggplot2::theme_bw() + ggplot2::geom_line(size = 1) +
+        y = Intensity, color = Type, label = Ion)) +
+        ggplot2::theme_bw() + ggplot2::geom_line(linewidth = 1) +
         ggplot2::scale_color_manual(values = ColorVector) + ggplot2::xlab(bquote(italic(.("M/Z")))) +
         ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
 
@@ -181,13 +192,13 @@ annotated_spectrum_plot <- function(PeakData,
       p <- plotly::plot_ly()
 
       # Set fragment type order
-      FragOrder <- Peaks$`General Type`[Peaks$`General Type` != "Spectrum"] %>% unique() %>% sort()
+      FragOrder <- Peaks$Type[Peaks$Type != "Spectrum"] %>% unique() %>% sort()
       FragOrder <- c("Spectrum", FragOrder)
 
       for (FragType in FragOrder) {
 
         # Subset Peak Data frame
-        PeakSub <- Peaks[Peaks$`General Type` == FragType,]
+        PeakSub <- Peaks[Peaks$Type == FragType,]
 
         # Create a separate "Add Trace" for Spectrum
         if (FragType == "Spectrum") {
@@ -242,7 +253,7 @@ annotated_spectrum_plot <- function(PeakData,
           Text <- list(
             x = FragmentTable$`M/Z Experimental`[row] + LabelDistance,
             y = FragmentTable$`Intensity Experimental`[row],
-            text = htmltools::HTML(paste('<span style="color: ', ColorVector[FragmentTable$`General Type`[row]],
+            text = htmltools::HTML(paste('<span style="color: ', ColorVector[FragmentTable$Type[row]],
                                          '; font-size: ', LabelSize, 'pt;"> ', FragmentTable$Ion[row], "<sup>",
                                          FragmentTable$Z[row], "</sup>, ", FragmentTable$Isotope[row], "</span>", sep = "")),
             xref = "x", yref = "y", showarrow = FALSE

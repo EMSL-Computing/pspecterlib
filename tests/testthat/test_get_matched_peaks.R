@@ -63,24 +63,14 @@ test_that("Testing get matched peaks function", {
     "CalculateIsotopes must be a single logical value TRUE or FALSE."
   )
 
-  # Isotopic percentage must be a numeric
+  # Minimum Abundance must be a numeric
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
       PeakData = BU_Peaks,
-      IsotopicPercentage = "2"
+      MinimumAbundance = "2"
     ),
-    "IsotopicPercentage must be a single numeric value. For example, 10."
-  )
-
-  # Isotopic percentage must be between 0 and 100
-  expect_error(
-    get_matched_peaks(
-      ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
-      IsotopicPercentage = 101
-    ),
-    "IsotopicPercentage must be between 0 and 100."
+    "MinimumAbundance must be a single numeric value. For example, 0.1."
   )
 
   # Correlation Score must be a numeric
@@ -110,7 +100,7 @@ test_that("Testing get matched peaks function", {
       PeakData = BU_Peaks,
       AlternativeSequence = "INVALIDSEQUENCE"
     ),
-    "The provided AlternativeSequence is not acceptable. See is_sequence for more details."
+    "The detected sequence: INVALIDSEQUENCE is not acceptable."
   )
 
   # Alternative Spectrum must be a valid spectrum
@@ -143,16 +133,6 @@ test_that("Testing get matched peaks function", {
     "AlternativeCharge must be a single number."
   )
 
-  # PTMs must be from the make_ptms function
-  expect_error(
-    get_matched_peaks(
-      ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
-      PTMs = data.frame(test = 1)
-    ),
-    "PTMs must be of the class 'modifications_pspecter' from make_ptm."
-  )
-
   # AlternativeIonGroups must be from the make_modified_ions function
   expect_error(
     get_matched_peaks(
@@ -173,20 +153,9 @@ test_that("Testing get matched peaks function", {
   BU_MatchedPeaks2 <- get_matched_peaks(
     AlternativeSpectrum = make_peak_data(MZ = BU_Peaks$`M/Z`, Intensity = BU_Peaks$Intensity),
     AlternativeCharge = 2,
-    AlternativeSequence = "TESTTESTTESTTEST",
+    AlternativeSequence = "TESTTEST[Acetyl]TESTTEST",
     AlternativeIonGroups = make_mass_modified_ion(Ion = "a", Symbol = "+", AMU_Change = 1),
-    PTMs = make_ptm("Acetyl", 14.015650, 8, list(list("H" = 2, "C" = 1)))
   )
-  expect_true(inherits(BU_MatchedPeaks2, "matched_peaks"))
-
-  # Expect Null when everything is remove
-  expect_null(suppressMessages(get_matched_peaks(
-    AlternativeSpectrum = make_peak_data(MZ = BU_Peaks$`M/Z`, Intensity = BU_Peaks$Intensity),
-    AlternativeCharge = 2,
-    AlternativeSequence = "TESTTESTTESTTEST",
-    CorrelationScore_FilterNA = TRUE,
-    Debug = FALSE
-  )))
-
+  expect_null(BU_MatchedPeaks2)
 
 })

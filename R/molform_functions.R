@@ -617,63 +617,108 @@ calculate_iso_profile <- function(molform,
 #' Ensures a string is an acceptable amino acid sequence
 #'
 #' @description A simple test function to ensure the provided sequence is an
-#'    acceptable amino acid sequence
+#'    acceptable amino acid sequence. ProForma sequences are accepted.
 #'
 #' @param Sequence An amino acid sequence which should be a single string. Required.
+#' @param Message Explain why the test failed. Default is FALSE. 
+#' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+#'     for formatting. 
 #'
 #' @details The output will either be a "TRUE" acceptable sequence, or "FALSE"
 #'    unacceptable sequence. An acceptable sequence cannot be NULL,
 #'    will not have any spaces or non-letter characters, will be longer than 1
-#'    amino acid, and will not contain the letters B, J, O, U, X, or Z. Proforma
-#'    notation (i.e. "TES[Acetyl]T") is not accepted, though you can convert the 
-#'    proforma string to a sequence with convert_proforma. Modifications should be of the
-#'    pspecter_ptm class as defined by the "make_ptm" class and can be applied to
-#'    the get_matched_peaks algorithm.
+#'    amino acid, and will not contain the letters B, J, O, U, X, or Z. ProForma
+#'    notation (i.e. "TES[Acetyl]T") is now accepted.
 #'
 #' @examples
 #' \dontrun{
 #'
 #' # An acceptable sequence will return TRUE
 #' is_sequence("TEST")
+#' is_sequence("TES[Acetyl]T")
+#' is_sequence("T[58.77]E[Acetyl]ST")
 #'
 #' # Unacceptable sequences will return FALSE
 #' is_sequence("TESTSEQUENCE")
-#' is_sequence("TES[Acetyl]T")
 #' is_sequence("TIRED $CIENTIST WORKING L8")
 #' is_sequence("T")
+#' is_sequence("T[UnfinishedEST")
 #'
 #' }
 #'
 #' @export
-is_sequence <- function(Sequence) {
+is_sequence <- function(Sequence, Message = FALSE, AlternativeGlossary = NULL) {
   
   ###########################
   ## RUN THROUGH THE TESTS ##
   ###########################
   
   # If sequence is NULL, return FALSE
-  if (is.null(Sequence)) {return(FALSE)}
-  
-  # If the sequence is not a string or longer than 1 string, throw error
-  if (is.character(Sequence) == FALSE || length(Sequence) > 1) {
-    stop("The provided Sequence must be a single string. Example: TEST")
+  if (is.null(Sequence) || is.na(Sequence) || Sequence == "") {
+    if (Message) {message("No sequence provided.")}
+    return(FALSE)
+  }
+    
+  # Test that the square brackets are added
+  if (grepl("\\[", Sequence) & !grepl("\\]", Sequence) | !grepl("\\[", Sequence) & grepl("\\]", Sequence)) {
+    if (Message) {message("Square bracket pairs must be completed.")}
+    return(FALSE)
+  }
+        
+  # No spaces 
+  if (grepl("[[:space:]]", Sequence)) {
+    if (Message) {message("Space not permitted.")}
+    return(FALSE)
+  } 
+          
+  # Extract modifications 
+  if (grepl("\\[", Sequence)) {
+    
+    # Pull modifications 
+    Split <- Sequence %>% strsplit("\\[|\\]") %>% unlist()
+    Modifications <- Split[c(FALSE, TRUE)]
+    
+    # Pull Glossary
+    if (is.null(AlternativeGlossary)) {
+      Glossary <- data.table::fread(
+        system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+      )
+    } else {
+      Glossary <- AlternativeGlossary
+    }
+
+    
+    # Iterate through modifications
+    Response <- lapply(Modifications, function(mod) {
+      
+      # Test if numeric 
+      if (suppressWarnings(!is.na(as.numeric(mod)))) {return(TRUE)} else {
+        return(mod %in% Glossary$Modification)
+      }
+       
+    }) %>% unlist() 
+      
+    if (!any(Response)) {
+      if (Message) {message("Unrecognized modification format. See the Glossary for more details.")}
+      return(FALSE)
+    }
+    
+    Sequence <- Split[c(TRUE, FALSE)] %>% paste0(collapse = "")
+    
   }
   
-  # If the sequence has spaces, return FALSE.
-  if (grepl("[[:space:]]", Sequence)) {return(FALSE)}
-  
-  # If the sequence has brackets, return FALSE.
-  if (grepl("\\[", Sequence) | grepl("\\]", Sequence)) {return(FALSE)}
-  
-  # If the sequence has anything besides letters, return FALSE.
-  if (grepl("[^aA-zZ]", Sequence)) {return(FALSE)}
-  
-  # If the number of characters in the sequence is less than 2, return FALSE.
-  if (nchar(Sequence) < 2) {return(FALSE)}
-  
-  # If the sequence contains B, J, O, U, or X, return FALSE.
-  if (grepl("[BbJjOoUuXxZz]", Sequence)) {return(FALSE)}
-  
+  # Test the sequence is only letters
+  if (grepl("[^[:alpha:]]", Sequence)) {
+    if (Message) {message("The sequence with modifications and their brackets removed should be only letters.")}
+    return(FALSE)
+  }
+    
+  # Test the sequence does not contain incorrect amino acids 
+  if (grepl("[BbJjOoUuXxZz]", Sequence)) {
+    if (Message) {message("B, J, O, U, X, and Z are not acceptable amino acids at this time.")}
+    return(FALSE)
+  }
+
   # Unless something else comes up that needs to expand this function, then at
   # this step, it is an acceptable sequence.
   return(TRUE)
@@ -689,6 +734,8 @@ is_sequence <- function(Sequence) {
 #' @author Degnan, David. Flores, Javier.
 #' 
 #' @param proforma A string written in the format "M.S[Methyl]S[22]S[23].V"
+#' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+#'     for formatting. 
 #' 
 #' @examples
 #' \dontrun{
@@ -703,7 +750,7 @@ is_sequence <- function(Sequence) {
 #' 
 #' }
 #' @export
-convert_proforma <- function(proforma) {
+convert_proforma <- function(proforma, AlternativeGlossary = NULL) {
   
   ##################
   ## CHECK INPUTS ##
@@ -744,10 +791,14 @@ convert_proforma <- function(proforma) {
   ###################
   
   # Load backend glossary
-  Glossary <- data.table::fread(
-    system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
-  )
-  
+  if (is.null(AlternativeGlossary)) {
+    Glossary <- data.table::fread(
+      system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+    )
+  } else {
+    Glossary <- AlternativeGlossary
+  }
+
   #####################################
   ## OTHERWISE, BUILD THE PTM OBJECT ##
   #####################################

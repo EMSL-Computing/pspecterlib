@@ -4,36 +4,40 @@
 \alias{is_sequence}
 \title{Ensures a string is an acceptable amino acid sequence}
 \usage{
-is_sequence(Sequence)
+is_sequence(Sequence, Message = FALSE, AlternativeGlossary = NULL)
 }
 \arguments{
 \item{Sequence}{An amino acid sequence which should be a single string. Required.}
+
+\item{Message}{Explain why the test failed. Default is FALSE.}
+
+\item{AlternativeGlossary}{Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+for formatting.}
 }
 \description{
 A simple test function to ensure the provided sequence is an
-   acceptable amino acid sequence
+   acceptable amino acid sequence. ProForma sequences are accepted.
 }
 \details{
 The output will either be a "TRUE" acceptable sequence, or "FALSE"
    unacceptable sequence. An acceptable sequence cannot be NULL,
    will not have any spaces or non-letter characters, will be longer than 1
-   amino acid, and will not contain the letters B, J, O, U, X, or Z. Proforma
-   notation (i.e. "TES[Acetyl]T") is not accepted, though you can convert the 
-   proforma string to a sequence with convert_proforma. Modifications should be of the
-   pspecter_ptm class as defined by the "make_ptm" class and can be applied to
-   the get_matched_peaks algorithm.
+   amino acid, and will not contain the letters B, J, O, U, X, or Z. ProForma
+   notation (i.e. "TES[Acetyl]T") is now accepted.
 }
 \examples{
 \dontrun{
 
 # An acceptable sequence will return TRUE
 is_sequence("TEST")
+is_sequence("TES[Acetyl]T")
+is_sequence("T[58.77]E[Acetyl]ST")
 
 # Unacceptable sequences will return FALSE
 is_sequence("TESTSEQUENCE")
-is_sequence("TES[Acetyl]T")
 is_sequence("TIRED $CIENTIST WORKING L8")
 is_sequence("T")
+is_sequence("T[UnfinishedEST")
 
 }
 

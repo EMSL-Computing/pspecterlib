@@ -7,8 +7,11 @@
 #' @param IncludeIsotopes A logical to indicate whether isotopes should be included. Default is FALSE.
 #' @param RemoveChargeAnnotation A logical to indicate whether the annotation for charge states should be included
 #'    in the plot. This does not remove charge states; rather, the annotation for charge states. Default is FALSE.
+#' @param RemoveModification A logical to indicate whether the modification on the residue
+#'    should be removed in the plot. Default is FALSE. 
 #' @param WrapLength An integer to index how many letters should be printed before wrapping.
 #'    Default is 10, but the value will vary depending on the size of your visualization.
+#' @param LabelSize The size of the PTM labels. Default is 3. 
 #'
 #' @examples
 #' \dontrun{
@@ -16,17 +19,23 @@
 #' # Test bottom up data
 #' BU_Peak <- get_peak_data(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728)
 #' BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak)
+#' BU_Match2 <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak, AlternativeSequence = "IGA[Acetyl]VGGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIGAGLNK")
 #'
 #' # Make plots
 #' sequence_plot(MatchedPeaks = BU_Match)
 #' sequence_plot(MatchedPeaks = BU_Match, RemoveChargeAnnotation = TRUE)
+#' sequence_plot(MatchedPeaks = BU_Match2)
+#' 
+#' 
 #' }
 #'
 #' @export
 sequence_plot <- function(MatchedPeaks,
                           IncludeIsotopes = FALSE,
                           RemoveChargeAnnotation = FALSE,
-                          WrapLength = 10) {
+                          RemoveModification = FALSE, 
+                          WrapLength = 8,
+                          LabelSize = 3) {
 
   ##################
   ## CHECK INPUTS ##
@@ -45,6 +54,11 @@ sequence_plot <- function(MatchedPeaks,
   # Assert that Remove Charge Annotation is a single logical
   if (is.na(RemoveChargeAnnotation) || is.logical(RemoveChargeAnnotation) == FALSE || length(RemoveChargeAnnotation) > 1) {
     stop("RemoveChargeAnnotation needs to be a single logical: a TRUE or FALSE.")
+  }
+  
+  # Assert that Remove Modification is a single logical
+  if (is.na(RemoveModification) || is.logical(RemoveModification) == FALSE || length(RemoveModification) > 1) {
+    stop("RemoveModification needs to be a single logical: a TRUE or FALSE")
   }
 
   # Assert that WrapLength is a numeric, and then convert to integer
@@ -137,15 +151,33 @@ sequence_plot <- function(MatchedPeaks,
                     "x" = "pink3", "y" = "red", "z" = "darkorange")
 
   # Create base ggplot
-  SeqPlot <- ggplot2::ggplot(data = SeqDF, ggplot2::aes(x = x, y = y, label = `Amino Acid`)) +
-    ggplot2::geom_text(size = 6) + ggplot2::theme_void() + ggplot2::ylim(c(min(SeqDF$y - 1), 0)) +
-    ggplot2::geom_segment(ggplot2::aes(x = xbottom, xend = xbottomend, y = ybottom, yend = ybottomend, color = bottomcolor)) +
-    ggplot2::geom_segment(ggplot2::aes(x = xright, xend = xrightend, y = yright, yend = yrightend, color = bottomcolor)) +
-    ggplot2::geom_segment(ggplot2::aes(x = xtop, xend = xtopend, y = ytop, yend = ytopend, color = topcolor)) +
-    ggplot2::geom_segment(ggplot2::aes(x = xleft, xend = xleftend, y = yleft, yend = yleftend, color = topcolor)) +
-    ggplot2::geom_text(ggplot2::aes(x = x, y = abcAnnotationY, label = abcAnnotation, color = bottomcolor, size = 1)) +
-    ggplot2::geom_text(ggplot2::aes(x = x, y = xyzAnnotationY, label = xyzAnnotation, color = topcolor, size = 1)) +
+  SeqPlot <- ggplot2::ggplot() +
+    ggplot2::geom_text(data = SeqDF, ggplot2::aes(x = x, y = y, label = `Amino Acid`), size = 6) + 
+    ggplot2::theme_void() + 
+    ggplot2::ylim(c(min(SeqDF$y - 1), 0)) +
+    ggplot2::geom_segment(data = SeqDF, ggplot2::aes(x = xbottom, xend = xbottomend, y = ybottom, yend = ybottomend, color = bottomcolor)) +
+    ggplot2::geom_segment(data = SeqDF, ggplot2::aes(x = xright, xend = xrightend, y = yright, yend = yrightend, color = bottomcolor)) +
+    ggplot2::geom_segment(data = SeqDF, ggplot2::aes(x = xtop, xend = xtopend, y = ytop, yend = ytopend, color = topcolor)) +
+    ggplot2::geom_segment(data = SeqDF, ggplot2::aes(x = xleft, xend = xleftend, y = yleft, yend = yleftend, color = topcolor)) +
+    ggplot2::geom_text(data = SeqDF, ggplot2::aes(x = x, y = abcAnnotationY, label = abcAnnotation, color = bottomcolor, size = 1)) +
+    ggplot2::geom_text(data = SeqDF, ggplot2::aes(x = x, y = xyzAnnotationY, label = xyzAnnotation, color = topcolor, size = 1)) +
     ggplot2::scale_color_manual(values = ColorList, na.value = NA) + ggplot2::theme(legend.position = "none")
+  
+  # Add modifications
+  if (!RemoveModification & !is.null(attributes(MatchedPeaks)$pspecter$PTMs)) {
+    
+    # Extract positions
+    PTM_Anno <- SeqDF[attributes(MatchedPeaks)$pspecter$PTMs$`N Position`, c("x", "y")]
+    
+    # Shift x name right by 0.5
+    PTM_Anno$x <- PTM_Anno$x + 0.25
+    
+    # Change name to modification
+    PTM_Anno$PTM <- substr(attributes(MatchedPeaks)$pspecter$PTMs$Name, 1, 6)
+    
+    SeqPlot <- SeqPlot + ggplot2::geom_label(data = PTM_Anno, ggplot2::aes(x = x, y = y, label = PTM), size = LabelSize)
+    
+  }
 
   return(SeqPlot)
 

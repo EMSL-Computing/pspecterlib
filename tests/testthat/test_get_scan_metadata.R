@@ -40,9 +40,9 @@ test_that("Testing get scan metadata function", {
   # Create BU_ScanMetadata using the files
   BU_ScanMetadata <- get_scan_metadata(file.path(downfolder, "BottomUp.mzML"), file.path(downfolder, "BottomUp.mzid"))
 
-  # The bottom up example should have 5454 rows and 18 columns.
-  expect_equal(nrow(BU_ScanMetadata), 5454)
-  expect_equal(ncol(BU_ScanMetadata), 18)
+  # The bottom up example should have 5525 rows and 17 columns.
+  expect_equal(nrow(BU_ScanMetadata), 5525)
+  expect_equal(ncol(BU_ScanMetadata), 17)
 
   # The attributes should have the MSPath, the IDPath, the file type, a mzRpwiz object,
   # an MSnbase object, and a list of MS1 Scans

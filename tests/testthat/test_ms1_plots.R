@@ -64,16 +64,6 @@ test_that("Testing ms1 plot plotting function", {
     "The IsotopicPercentageFilter must be a number between 0-100."
   )
 
-  # Remove negative isotopes should be a true or false
-  expect_error(
-    ms1_plots(
-      ScanMetadata = BU_ScanMetadata,
-      ScanNumber = 31728,
-      RemoveNegativeIsotopes = NA
-    ),
-    "RemoveNegativeIsotopes parameter must be either TRUE or FALSE."
-  )
-
   # Interactive should be true or false
   expect_error(
     ms1_plots(
@@ -90,7 +80,6 @@ test_that("Testing ms1 plot plotting function", {
   suppressWarnings(thePlots1 <- ms1_plots(
     ScanMetadata = BU_ScanMetadata,
     ScanNumber = 34291,
-    RemoveNegativeIsotopes = FALSE,
     Interactive = NA
   ))
   expect_null(thePlots1[[2]])
@@ -101,7 +90,6 @@ test_that("Testing ms1 plot plotting function", {
     ScanMetadata = BU_ScanMetadata,
     ScanNumber = 34291,
     Sequence = "TESTTESTTESTTESTTESTTESTTEST",
-    RemoveNegativeIsotopes = FALSE,
     Interactive = TRUE
   ))
   expect_null(thePlots2[[2]])
@@ -127,7 +115,7 @@ test_that("Testing ms1 plot plotting function", {
     thePlots5 <- ms1_plots(
       ScanMetadata = BU_ScanMetadata,
       ScanNumber = 31728,
-      Window = 1e-12,
+      Window = 1,
       Interactive = FALSE
     )
   ))

@@ -10,8 +10,8 @@ ms1_plots(
   Window = 5,
   Sequence = NULL,
   IsotopicPercentageFilter = 10,
-  RemoveNegativeIsotopes = TRUE,
-  Interactive = TRUE
+  Interactive = TRUE,
+  AlternativeGlossary = NULL
 )
 }
 \arguments{
@@ -25,9 +25,10 @@ ms1_plots(
 
 \item{IsotopicPercentageFilter}{Percentage written as a number between 0-100 to filter potential isotopes by relative abundance. Default is 10.}
 
-\item{RemoveNegativeIsotopes}{A True/False to indicate whether isotopes before M should be removed. Default is TRUE.}
-
 \item{Interactive}{If True, an interactive plotly graphic will be returned. If False, a static ggplot graphic will be returned. Default is FALSE.}
+
+\item{AlternativeGlossary}{Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+for formatting.}
 }
 \description{
 Generates a list with two plots: previous and next MS1 within an isolation window, and labeled with isotopes.
@@ -49,6 +50,11 @@ MS1_Interactive[[1]]
 
 # See a next MS1 statically
 MS1_Static[[2]]
+
+# Try with a modified sequence 
+MS1_Interactive2 <- ms1_plots(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728, Window = 5,
+                              Sequence = "IGA[Acetyl]VGGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIGAGLNK", 
+                              Interactive = TRUE, IsotopicPercentageFilter = 10)
 
 }
 

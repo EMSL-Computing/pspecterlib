@@ -20,6 +20,10 @@
 #'    and "highest abundance" chooses the highest intensity peak within the PPM window. "closest peak"
 #'    is recommended for peaks that have been peak picked with an external tool, 
 #'    and "highest abundance" is recommended for noisy datasets or those with many peaks. 
+#' @param IsotopeAlgorithm "isopat" uses the isopat package to calculate isotopes, while 
+#'     "Rdisop" uses the Rdisop package. Though more accurate, Rdisop has been known to 
+#'     crash on Windows computers when called iteratively more than 1000 times. 
+#'     Default is Rdisop, though isopat is an alternative.
 #' @param AlternativeIonGroups A "modified_ion" object from "make_mass_modified ions." Default is NULL.
 #' @param AlternativeSequence A proforma-acceptable string to calculate the literature 
 #'    fragments. The default is the sequence matched in the ScanMetadata file. Default is NULL.
@@ -27,6 +31,8 @@
 #'     PeakData. Mostly used by other packages. Default is NULL.
 #' @param AlternativeCharge A different charge value to test besides the one in the PeakData 
 #'     spectrum. 
+#' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+#'     for formatting. 
 #'
 #' @details
 #' The data.table outputted by this function contains 17 columns.
@@ -93,7 +99,8 @@
 #' BU_Match3 <- get_matched_peaks(
 #'  ScanMetadata = BU_ScanMetadata,
 #'  PeakData = BU_Peak, 
-#'  AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "+", AMU_Change = 1.00727647)
+#'  IonGroups = "b",
+#'  AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "^", AMU_Change = 1.00727647)
 #' )
 #' 
 #'
@@ -112,10 +119,12 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                               MinimumAbundance = 1,
                               CorrelationScore = 0,
                               MatchingAlgorithm = "closest peak",
+                              IsotopeAlgorithm = "Rdisop",
                               AlternativeIonGroups = NULL,
                               AlternativeSequence = NULL,
                               AlternativeSpectrum = NULL,
                               AlternativeCharge = NULL,
+                              AlternativeGlossary = NULL,
                               ...) {
 
   .get_matched_peaks(
@@ -127,10 +136,12 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     MinimumAbundance = MinimumAbundance,
     CorrelationScore = CorrelationScore,
     MatchingAlgorithm = MatchingAlgorithm,
+    IsotopeAlgorithm = IsotopeAlgorithm,
     AlternativeIonGroups = AlternativeIonGroups,
     AlternativeSequence = AlternativeSequence,
     AlternativeSpectrum = AlternativeSpectrum,
     AlternativeCharge = AlternativeCharge,
+    AlternativeGlossary = AlternativeGlossary,
     ...
   )
 
@@ -144,10 +155,12 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                                MinimumAbundance,
                                CorrelationScore,
                                MatchingAlgorithm,
+                               IsotopeAlgorithm,
                                AlternativeIonGroups,
-                               AlternativeSequence = NULL,
-                               AlternativeSpectrum = NULL,
-                               AlternativeCharge = NULL,
+                               AlternativeSequence,
+                               AlternativeSpectrum,
+                               AlternativeCharge,
+                               AlternativeGlossary,
                                CorrelationScore_FilterNA = FALSE,
                                ChargeThresh = 5,
                                ChargeThresh2 = 10,
@@ -279,7 +292,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       sort()
     if (length(toRm) > 0) {Fragments <- Fragments[-toRm,]}
 
-    
     # First, remove peaks that would never match 
     Fragments <- Fragments %>%
       dplyr::mutate(
@@ -291,6 +303,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       ) %>%
       dplyr::filter(Within == TRUE) %>%
       dplyr::select(-c(`PPM Low`, `PPM High`, Within))
+  
     
     # Second take the minimum charge peak within each ppm bin to prioritize smaller charges. 
     # BinVal <- 0 # This is to count bins
@@ -322,8 +335,35 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
   # Get the sequence object 
   if (is.null(AlternativeSequence)) {
-    Sequence_Object <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Sequence"] %>% unlist() %>% convert_proforma()
-  } else {Sequence_Object <- convert_proforma(AlternativeSequence)}
+    
+    ExtractSeq <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Sequence"] %>% unlist()
+    
+    if (length(ExtractSeq) > 1) {
+      message(paste("Multiple sequences detected. Select one and pass it to AlternativeSequence. Your options are:", paste(ExtractSeq, collapse = ", ")))
+      return(NULL)
+    }
+    
+    if (is.na(ExtractSeq)) {
+      message("Sequence is NA")
+      return(NULL)
+    }
+    
+    if (is.null(AlternativeGlossary)) {
+      Sequence_Object <- convert_proforma(ExtractSeq)
+    } else {
+      Sequence_Object <- convert_proforma(ExtractSeq, AlternativeGlossary)
+    }
+    
+    
+  } else {
+    
+    if (is.null(AlternativeGlossary)) {
+      Sequence_Object <- convert_proforma(AlternativeSequence)
+    } else {
+      Sequence_Object <- convert_proforma(AlternativeSequence, AlternativeGlossary)
+    }
+    
+  }
   
   # Pull the sequence
   if (is.character(Sequence_Object)) {Sequence <- Sequence_Object} else {
@@ -332,13 +372,18 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   
   # Get the precursor charge
   if (is.null(AlternativeCharge)) {
-    PrecursorCharge <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor Charge"] %>% unlist()
+    PrecursorCharge <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor Charge"] %>% unlist() %>% head(1)
   } else {PrecursorCharge <- AlternativeCharge}
   
   # Load Glossary
-  Glossary <- data.table::fread(
-    system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
-  )
+  if (is.null(AlternativeGlossary)) {
+    Glossary <- data.table::fread(
+      system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+    )
+  } else {
+    Glossary <- AlternativeGlossary
+  }
+
 
   #################################
   ## 2. CALCULATE BASE FRAGMENTS ##
@@ -376,7 +421,18 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       getIon <- AlternativeIonGroups$Ion[row]
 
       # Subset fragments
-      subFrag <- Fragments[Fragments$Type == getIon,]
+      subFrag <- MSnbase::calculateFragments(sequence = Sequence, type = getIon,
+                                             z = 1:PrecursorCharge) %>% data.table::data.table()
+      
+      # Rename Fragments
+      colnames(subFrag) <- c("M/Z", "Ion", "Type", "Position", "Z", "Sequence")
+      
+      # Exclude N-deamidated and C-dehydrated specific modifications
+      subFrag <- dplyr::filter(subFrag, !grepl("[.*_]", subFrag$Type))
+      
+      # Label the N-position. Remember that x,y,z fragments are determined from the C-terminus
+      subFrag$`N Position` <- ifelse(subFrag$Type %in% c("a", "b", "c"),
+                                     subFrag$Position, (nchar(Sequence) + 1) - Fragments$Position)
 
       # Proceed only if there's any fragments
       if (nrow(subFrag) > 0) {
@@ -465,6 +521,11 @@ get_matched_peaks <- function(ScanMetadata = NULL,
 
   # Trim down potential fragments to match
   Fragments <- cleanCalculatedFragments(Fragments)
+  
+  if (nrow(Fragments) == 0) {
+    message("No peaks matched.")
+    return(NULL)
+  }
 
   ###############################
   ## 5. ADD MOLECULAR FORMULAS ##
@@ -476,12 +537,6 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   MolFormDF <- Fragments %>%
     dplyr::select(Sequence, Modifications) %>%
     unique()
-  
-  # Remove sequences with a single amino acid
-  MolFormDF <- MolFormDF %>% 
-    dplyr::mutate(Count = nchar(Sequence) > 1) %>% 
-    dplyr::filter(Count) %>% 
-    dplyr::select(-Count)
 
   # Iterate through, getting sequences and modifications and combining them
   MolFormDF$`Molecular Formula` <- lapply(1:nrow(MolFormDF), function(row) {
@@ -489,7 +544,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     # Step one: get sequence and modifications
     Seq <- MolFormDF$Sequence[row]
     Mod <- MolFormDF$Modifications[row]
-
+    
     # Step two: convert sequence to molecule object
     Atoms <- get_aa_molform(Seq)
 
@@ -559,7 +614,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     IsotopeList <- do.call(dplyr::bind_rows, lapply(MolForms, function(MolForm) {
       
       # Get Isotope Relative Abundances
-      IsotopeResults <- calculate_iso_profile(as.molform(MolForm), min_abundance = MinimumAbundance)
+      IsotopeResults <- calculate_iso_profile(as.molform(MolForm), algorithm = IsotopeAlgorithm, min_abundance = MinimumAbundance)
       IsotopeResults$`Molecular Formula` = MolForm
       return(IsotopeResults)
       

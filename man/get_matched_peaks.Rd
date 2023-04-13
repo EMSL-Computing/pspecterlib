@@ -13,10 +13,12 @@ get_matched_peaks(
   MinimumAbundance = 1,
   CorrelationScore = 0,
   MatchingAlgorithm = "closest peak",
+  IsotopeAlgorithm = "Rdisop",
   AlternativeIonGroups = NULL,
   AlternativeSequence = NULL,
   AlternativeSpectrum = NULL,
   AlternativeCharge = NULL,
+  AlternativeGlossary = NULL,
   ...
 )
 }
@@ -44,6 +46,11 @@ and "highest abundance" chooses the highest intensity peak within the PPM window
 is recommended for peaks that have been peak picked with an external tool, 
 and "highest abundance" is recommended for noisy datasets or those with many peaks.}
 
+\item{IsotopeAlgorithm}{"isopat" uses the isopat package to calculate isotopes, while 
+"Rdisop" uses the Rdisop package. Though more accurate, Rdisop has been known to 
+crash on Windows computers when called iteratively more than 1000 times. 
+Default is Rdisop, though isopat is an alternative.}
+
 \item{AlternativeIonGroups}{A "modified_ion" object from "make_mass_modified ions." Default is NULL.}
 
 \item{AlternativeSequence}{A proforma-acceptable string to calculate the literature 
@@ -54,6 +61,9 @@ PeakData. Mostly used by other packages. Default is NULL.}
 
 \item{AlternativeCharge}{A different charge value to test besides the one in the PeakData 
 spectrum.}
+
+\item{AlternativeGlossary}{Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+for formatting.}
 
 \item{MinAbundance}{Minimum abundance for calculating isotopes. Default is 0.1.}
 }
@@ -126,7 +136,8 @@ BU_Match2 <- get_matched_peaks(
 BU_Match3 <- get_matched_peaks(
  ScanMetadata = BU_ScanMetadata,
  PeakData = BU_Peak, 
- AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "+", AMU_Change = 1.00727647)
+ IonGroups = "b",
+ AlternativeIonGroups = make_mass_modified_ion(Ion = "y", Symbol = "^", AMU_Change = 1.00727647)
 )
 
 

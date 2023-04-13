@@ -7,8 +7,9 @@
 #' @param Window Size of the MS1 plotting window from the Precursor M/Z in units of M/Z. Default is 5 M/Z.
 #' @param Sequence Protein sequence for annotating experimental M/Z, if different from the ID data. Default is NULL.
 #' @param IsotopicPercentageFilter Percentage written as a number between 0-100 to filter potential isotopes by relative abundance. Default is 10.
-#' @param RemoveNegativeIsotopes A True/False to indicate whether isotopes before M should be removed. Default is TRUE.
 #' @param Interactive If True, an interactive plotly graphic will be returned. If False, a static ggplot graphic will be returned. Default is FALSE.
+#' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+#'     for formatting. 
 #'
 #' @details
 #' Two plots will be returned in a list. The first is the previous MS1, and the second is the next MS1.
@@ -27,6 +28,11 @@
 #'
 #' # See a next MS1 statically
 #' MS1_Static[[2]]
+#' 
+#' # Try with a modified sequence 
+#' MS1_Interactive2 <- ms1_plots(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728, Window = 5,
+#'                               Sequence = "IGA[Acetyl]VGGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIGAGLNK", 
+#'                               Interactive = TRUE, IsotopicPercentageFilter = 10)
 #'
 #' }
 #'
@@ -36,8 +42,8 @@ ms1_plots <- function(ScanMetadata,
                      Window = 5,
                      Sequence = NULL,
                      IsotopicPercentageFilter = 10,
-                     RemoveNegativeIsotopes = TRUE,
-                     Interactive = TRUE) {
+                     Interactive = TRUE,
+                     AlternativeGlossary = NULL) {
 
 
   ##################
@@ -70,19 +76,21 @@ ms1_plots <- function(ScanMetadata,
 
   # Check sequence
   if (!is.null(Sequence)) {
-    if (!is_sequence(Sequence)) {
-      stop("Sequence is not an acceptable input. See is_sequence.")
+    
+    if (!is.null(AlternativeGlossary)) {
+      if (!is_sequence(Sequence, AlternativeGlossary = AlternativeGlossary)) {
+        stop("Sequence is not an acceptable input. See is_sequence.")
+      }
+    } else {
+      if (!is_sequence(Sequence)) {
+        stop("Sequence is not an acceptable input. See is_sequence.")
+      }
     }
   }
 
   # Assert that IsotopicPercentageFilter is a number between 0-100
   if (!is.numeric(IsotopicPercentageFilter) || length(IsotopicPercentageFilter) != 1 || IsotopicPercentageFilter < 0 || IsotopicPercentageFilter > 100) {
     stop("The IsotopicPercentageFilter must be a number between 0-100.")
-  }
-
-  # Assert that RemoveNegativeIsotopes is a logical and not NA
-  if (is.na(RemoveNegativeIsotopes) || !is.logical(RemoveNegativeIsotopes) || is.na(RemoveNegativeIsotopes)) {
-    stop("RemoveNegativeIsotopes parameter must be either TRUE or FALSE.")
   }
 
   # Assert that interactive is a logical and not NA
@@ -153,36 +161,75 @@ ms1_plots <- function(ScanMetadata,
     }
 
   }
-
-  # Get isotope distribution for the input sequence
-  collapseFUN <- function(x) {paste0(names(x), x, collapse = "")}
-  GetMolecule <- BRAIN::getAtomsFromSeq(Sequence) %>% collapseFUN() %>% Rdisop::getMolecule()
-
-  # Pull out the exact mass that was inputted into RDisop, and use that to determine
-  # M-/+N isotopic positioning. Since this is a calculated isotopes, it will not
-  # perfectly match up with experimental isotopes.
-  ExactMass <- GetMolecule$exactmass
-  IsoDist <- GetMolecule$isotopes[[1]] %>% t() %>% data.table::data.table()
-  colnames(IsoDist) <- c("M/Z", "Isotopic Percentage")
-  IsoDist$Isotope <- ""
-
-  # Get the match position for isotope M and then add the M- and M+. Make M+0 just M.
-  MatchPos <- match(ExactMass, IsoDist$`M/Z`)
-  MValue <- 1:nrow(IsoDist) - MatchPos
-  IsoDist$Isotope <- ifelse(MValue < 0, paste0("M", MValue), paste0("M+", MValue))
-  IsoDist[IsoDist$Isotope == "M+0", "Isotope"] <- "M"
-
-  # Remove negative isotopes
-  if (RemoveNegativeIsotopes) {
-    IsoDist <- IsoDist[grepl("-", IsoDist$Isotope) == FALSE,]
+  
+  # Load Glossary
+  if (is.null(AlternativeGlossary)) {
+    Glossary <- data.table::fread(
+      system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+    )
+    Convert <- convert_proforma(Sequence)
+  } else {
+    Glossary <- AlternativeGlossary
+    Convert <- convert_proforma(Sequence, AlternativeGlossary)
   }
+  
+  # Extract sequence
+  if (is.character(Convert)) {
+    Sequence <- Convert
+  } else {
+    Sequence <- attr(Convert, "pspecter")$cleaned_sequence
+  }
+
+  # Get sequence molecular formula 
+  MolForm <- Sequence %>% get_aa_molform()
+  
+  # Adjust molform 
+  if (!is.character(Convert)) {
+    
+    # Change class
+    class(Convert) <- "data.frame"
+    
+    # Extract named modifications
+    Named <- Glossary[Glossary$Modification %in% Convert$Name,]
+    
+    if (length(Named) != 0) {
+      
+      for (row in 1:nrow(Named)) {
+        
+        premolform <- Named[row, 4:ncol(Glossary)] %>% 
+          dplyr::select(colnames(.)[!is.na(.)]) %>% 
+          paste0(colnames(.), ., collapse = "")
+        
+        
+        MolForm <- add_molforms(MolForm, as.molform(premolform))
+      }
+      
+    }
+    
+  }
+  
+  # Calculate isotope profile 
+  IsoDist <- calculate_iso_profile(MolForm) %>%
+    dplyr::rename(`M/Z` = mass, Isotope = isolabel)
 
   # Get the Precursor Charge
   PrecursorCharge <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "Precursor Charge"] %>% unlist()
 
   # Apply Isotope Distribution as a change to the M+0 peak
-  IsoDist$`M/Z` <- ((IsoDist$`M/Z` - ExactMass) / PrecursorCharge) + PrecursorMZ
+  IsoDist$`M/Z` <- (IsoDist$`M/Z` / PrecursorCharge) + PrecursorMZ
 
+  # Add any mass changes 
+  if (!is.character(Convert)) {
+    
+    # Extract mass modifications
+    MassChange <- Glossary[Glossary$Modification %in% Convert$Name == FALSE,]
+    
+    if (nrow(MassChange) > 0) {
+      IsoDist$`M/Z` <- IsoDist$`M/Z` + sum(Convert$`AMU Change`)
+    }
+    
+  }
+  
   # Filter peaks at the isotopic percentage
   IsoDist <- IsoDist[IsoDist$`Isotopic Percentage` >= IsotopicPercentageFilter / 100,]
 
@@ -222,12 +269,16 @@ ms1_plots <- function(ScanMetadata,
   }
 
   # Set color pallete
-  ColorListPre <- RColorBrewer::brewer.pal(length(unique(PreviousPeaks$`Peak Description`)) - 1, "Set1")
+  precount <- length(unique(PreviousPeaks$`Peak Description`)) - 1
+  precount <- ifelse(precount < 3, 3, precount)
+  ColorListPre <- RColorBrewer::brewer.pal(precount, "Set1")
   names(ColorListPre) <- unique(PreviousPeaks$`Peak Description`)[grepl("M", unique(PreviousPeaks$`Peak Description`))]
   ColorListPre["Experimental"] <- "#000000"
 
   if (!is.na(NextMS1ScanNum)) {
-    ColorListNext <- RColorBrewer::brewer.pal(length(unique(NextPeaks$`Peak Description`)) - 1, "Set1")
+    postcount <- length(unique(NextPeaks$`Peak Description`)) - 1
+    postcount <- ifelse(postcount < 3, 3, postcount)
+    ColorListNext <- RColorBrewer::brewer.pal(postcount, "Set1")
     names(ColorListNext) <- unique(NextPeaks$`Peak Description`)[grepl("M", unique(NextPeaks$`Peak Description`))]
     ColorListNext["Experimental"] <- "#000000"
   }

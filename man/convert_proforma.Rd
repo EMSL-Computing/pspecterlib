@@ -4,10 +4,13 @@
 \alias{convert_proforma}
 \title{Convert a proforma string to a PTM object}
 \usage{
-convert_proforma(proforma)
+convert_proforma(proforma, AlternativeGlossary = NULL)
 }
 \arguments{
 \item{proforma}{A string written in the format "M.S[Methyl]S[22]S[23].V"}
+
+\item{AlternativeGlossary}{Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+for formatting.}
 }
 \description{
 Converts proforma strings to a PTM object that get_matched_peaks uses

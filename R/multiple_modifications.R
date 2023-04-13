@@ -32,7 +32,7 @@
 #' 
 #' }
 #' @export
-multiple_modifications <- function(Sequence, Modification, AlternativeGlossary) {
+multiple_modifications <- function(Sequence, Modification, AlternativeGlossary = NULL) {
   
   ##################
   ## CHECK INPUTS ##

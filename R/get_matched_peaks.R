@@ -348,9 +348,22 @@ get_matched_peaks <- function(ScanMetadata = NULL,
       return(NULL)
     }
     
-    Sequence_Object <- convert_proforma(ExtractSeq)
+    if (is.null(AlternativeGlossary)) {
+      Sequence_Object <- convert_proforma(ExtractSeq)
+    } else {
+      Sequence_Object <- convert_proforma(ExtractSeq, AlternativeGlossary)
+    }
     
-  } else {Sequence_Object <- convert_proforma(AlternativeSequence)}
+    
+  } else {
+    
+    if (is.null(AlternativeGlossary)) {
+      Sequence_Object <- convert_proforma(AlternativeSequence)
+    } else {
+      Sequence_Object <- convert_proforma(AlternativeSequence, AlternativeGlossary)
+    }
+    
+  }
   
   # Pull the sequence
   if (is.character(Sequence_Object)) {Sequence <- Sequence_Object} else {

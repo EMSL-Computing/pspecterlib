@@ -23,4 +23,4 @@ Allows users to use the backend functionality of the PSpecteR proteomics visuali
 
 # Current Package Test Coverage 
 
-86.37% 
+86.13% 

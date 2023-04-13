@@ -4,7 +4,7 @@
 \alias{multiple_modifications}
 \title{A function to generate a list of properly formatted proforma strings}
 \usage{
-multiple_modifications(Sequence, Modification, AlternativeGlossary)
+multiple_modifications(Sequence, Modification, AlternativeGlossary = NULL)
 }
 \arguments{
 \item{Sequence}{A valid protein sequence. It may start with "M." which gets removed. Required.}

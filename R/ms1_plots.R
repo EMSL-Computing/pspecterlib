@@ -76,8 +76,15 @@ ms1_plots <- function(ScanMetadata,
 
   # Check sequence
   if (!is.null(Sequence)) {
-    if (!is_sequence(Sequence)) {
-      stop("Sequence is not an acceptable input. See is_sequence.")
+    
+    if (!is.null(AlternativeGlossary)) {
+      if (!is_sequence(Sequence, AlternativeGlossary = AlternativeGlossary)) {
+        stop("Sequence is not an acceptable input. See is_sequence.")
+      }
+    } else {
+      if (!is_sequence(Sequence)) {
+        stop("Sequence is not an acceptable input. See is_sequence.")
+      }
     }
   }
 
@@ -160,13 +167,11 @@ ms1_plots <- function(ScanMetadata,
     Glossary <- data.table::fread(
       system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
     )
+    Convert <- convert_proforma(Sequence)
   } else {
     Glossary <- AlternativeGlossary
+    Convert <- convert_proforma(Sequence, AlternativeGlossary)
   }
-
-  
-  # Convert ProForma
-  Convert <- convert_proforma(Sequence)
   
   # Extract sequence
   if (is.character(Convert)) {

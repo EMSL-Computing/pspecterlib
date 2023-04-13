@@ -18,6 +18,7 @@ get_matched_peaks(
   AlternativeSequence = NULL,
   AlternativeSpectrum = NULL,
   AlternativeCharge = NULL,
+  AlternativeGlossary = NULL,
   ...
 )
 }
@@ -60,6 +61,9 @@ PeakData. Mostly used by other packages. Default is NULL.}
 
 \item{AlternativeCharge}{A different charge value to test besides the one in the PeakData 
 spectrum.}
+
+\item{AlternativeGlossary}{Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+for formatting.}
 
 \item{MinAbundance}{Minimum abundance for calculating isotopes. Default is 0.1.}
 }

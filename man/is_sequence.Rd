@@ -4,12 +4,15 @@
 \alias{is_sequence}
 \title{Ensures a string is an acceptable amino acid sequence}
 \usage{
-is_sequence(Sequence, Message = FALSE)
+is_sequence(Sequence, Message = FALSE, AlternativeGlossary = NULL)
 }
 \arguments{
 \item{Sequence}{An amino acid sequence which should be a single string. Required.}
 
-\item{Message}{Explain why the test failed}
+\item{Message}{Explain why the test failed. Default is FALSE.}
+
+\item{AlternativeGlossary}{Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+for formatting.}
 }
 \description{
 A simple test function to ensure the provided sequence is an

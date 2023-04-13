@@ -3,6 +3,8 @@
 #' @param Sequence A valid protein sequence. It may start with "M." which gets removed. Required.
 #' @param Modification An IsoForma modifications annotation written as 
 #'     "PTM,Residue(Positions)[Number of Modifications]". Required. 
+#' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+#'     for formatting. 
 #'     
 #' @examples
 #' \dontrun{
@@ -30,7 +32,7 @@
 #' 
 #' }
 #' @export
-multiple_modifications <- function(Sequence, Modification) {
+multiple_modifications <- function(Sequence, Modification, AlternativeGlossary) {
   
   ##################
   ## CHECK INPUTS ##
@@ -118,9 +120,14 @@ multiple_modifications <- function(Sequence, Modification) {
   ## CHECK MODS ##
   ################
   
-  Glossary <- data.table::fread(
-    system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
-  )
+  if (is.null(AlternativeGlossary)) {
+    Glossary <- data.table::fread(
+      system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+    )
+  } else {
+    Glossary <- AlternativeGlossary
+  }
+  
   
   # Create a dataframe that is easier to check
   checkMod <- do.call(rbind, Mods)

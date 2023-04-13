@@ -31,6 +31,8 @@
 #'     PeakData. Mostly used by other packages. Default is NULL.
 #' @param AlternativeCharge A different charge value to test besides the one in the PeakData 
 #'     spectrum. 
+#' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+#'     for formatting. 
 #'
 #' @details
 #' The data.table outputted by this function contains 17 columns.
@@ -122,6 +124,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                               AlternativeSequence = NULL,
                               AlternativeSpectrum = NULL,
                               AlternativeCharge = NULL,
+                              AlternativeGlossary = NULL,
                               ...) {
 
   .get_matched_peaks(
@@ -138,6 +141,7 @@ get_matched_peaks <- function(ScanMetadata = NULL,
     AlternativeSequence = AlternativeSequence,
     AlternativeSpectrum = AlternativeSpectrum,
     AlternativeCharge = AlternativeCharge,
+    AlternativeGlossary = AlternativeGlossary,
     ...
   )
 
@@ -153,9 +157,10 @@ get_matched_peaks <- function(ScanMetadata = NULL,
                                MatchingAlgorithm,
                                IsotopeAlgorithm,
                                AlternativeIonGroups,
-                               AlternativeSequence = NULL,
-                               AlternativeSpectrum = NULL,
-                               AlternativeCharge = NULL,
+                               AlternativeSequence,
+                               AlternativeSpectrum,
+                               AlternativeCharge,
+                               AlternativeGlossary,
                                CorrelationScore_FilterNA = FALSE,
                                ChargeThresh = 5,
                                ChargeThresh2 = 10,
@@ -358,9 +363,14 @@ get_matched_peaks <- function(ScanMetadata = NULL,
   } else {PrecursorCharge <- AlternativeCharge}
   
   # Load Glossary
-  Glossary <- data.table::fread(
-    system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
-  )
+  if (is.null(AlternativeGlossary)) {
+    Glossary <- data.table::fread(
+      system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+    )
+  } else {
+    Glossary <- AlternativeGlossary
+  }
+
 
   #################################
   ## 2. CALCULATE BASE FRAGMENTS ##

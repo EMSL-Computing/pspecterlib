@@ -8,6 +8,8 @@
 #' @param Sequence Protein sequence for annotating experimental M/Z, if different from the ID data. Default is NULL.
 #' @param IsotopicPercentageFilter Percentage written as a number between 0-100 to filter potential isotopes by relative abundance. Default is 10.
 #' @param Interactive If True, an interactive plotly graphic will be returned. If False, a static ggplot graphic will be returned. Default is FALSE.
+#' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+#'     for formatting. 
 #'
 #' @details
 #' Two plots will be returned in a list. The first is the previous MS1, and the second is the next MS1.
@@ -40,7 +42,8 @@ ms1_plots <- function(ScanMetadata,
                      Window = 5,
                      Sequence = NULL,
                      IsotopicPercentageFilter = 10,
-                     Interactive = TRUE) {
+                     Interactive = TRUE,
+                     AlternativeGlossary = NULL) {
 
 
   ##################
@@ -153,9 +156,14 @@ ms1_plots <- function(ScanMetadata,
   }
   
   # Load Glossary
-  Glossary <- data.table::fread(
-    system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
-  )
+  if (is.null(AlternativeGlossary)) {
+    Glossary <- data.table::fread(
+      system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+    )
+  } else {
+    Glossary <- AlternativeGlossary
+  }
+
   
   # Convert ProForma
   Convert <- convert_proforma(Sequence)

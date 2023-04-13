@@ -4,13 +4,16 @@
 \alias{multiple_modifications}
 \title{A function to generate a list of properly formatted proforma strings}
 \usage{
-multiple_modifications(Sequence, Modification)
+multiple_modifications(Sequence, Modification, AlternativeGlossary)
 }
 \arguments{
 \item{Sequence}{A valid protein sequence. It may start with "M." which gets removed. Required.}
 
 \item{Modification}{An IsoForma modifications annotation written as 
 "PTM,Residue(Positions)[Number of Modifications]". Required.}
+
+\item{AlternativeGlossary}{Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+for formatting.}
 }
 \description{
 A function to generate a list of properly formatted proforma strings

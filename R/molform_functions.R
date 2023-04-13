@@ -620,7 +620,9 @@ calculate_iso_profile <- function(molform,
 #'    acceptable amino acid sequence. ProForma sequences are accepted.
 #'
 #' @param Sequence An amino acid sequence which should be a single string. Required.
-#' @param Message Explain why the test failed 
+#' @param Message Explain why the test failed. Default is FALSE. 
+#' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+#'     for formatting. 
 #'
 #' @details The output will either be a "TRUE" acceptable sequence, or "FALSE"
 #'    unacceptable sequence. An acceptable sequence cannot be NULL,
@@ -645,7 +647,7 @@ calculate_iso_profile <- function(molform,
 #' }
 #'
 #' @export
-is_sequence <- function(Sequence, Message = FALSE) {
+is_sequence <- function(Sequence, Message = FALSE, AlternativeGlossary = NULL) {
   
   ###########################
   ## RUN THROUGH THE TESTS ##
@@ -677,9 +679,14 @@ is_sequence <- function(Sequence, Message = FALSE) {
     Modifications <- Split[c(FALSE, TRUE)]
     
     # Pull Glossary
-    Glossary <- data.table::fread(
-      system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
-    )
+    if (is.null(AlternativeGlossary)) {
+      Glossary <- data.table::fread(
+        system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+      )
+    } else {
+      Glossary <- AlternativeGlossary
+    }
+
     
     # Iterate through modifications
     Response <- lapply(Modifications, function(mod) {
@@ -727,6 +734,8 @@ is_sequence <- function(Sequence, Message = FALSE) {
 #' @author Degnan, David. Flores, Javier.
 #' 
 #' @param proforma A string written in the format "M.S[Methyl]S[22]S[23].V"
+#' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+#'     for formatting. 
 #' 
 #' @examples
 #' \dontrun{
@@ -741,7 +750,7 @@ is_sequence <- function(Sequence, Message = FALSE) {
 #' 
 #' }
 #' @export
-convert_proforma <- function(proforma) {
+convert_proforma <- function(proforma, AlternativeGlossary = NULL) {
   
   ##################
   ## CHECK INPUTS ##
@@ -782,10 +791,14 @@ convert_proforma <- function(proforma) {
   ###################
   
   # Load backend glossary
-  Glossary <- data.table::fread(
-    system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
-  )
-  
+  if (is.null(AlternativeGlossary)) {
+    Glossary <- data.table::fread(
+      system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib")
+    )
+  } else {
+    Glossary <- AlternativeGlossary
+  }
+
   #####################################
   ## OTHERWISE, BUILD THE PTM OBJECT ##
   #####################################

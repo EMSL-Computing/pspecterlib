@@ -10,7 +10,8 @@ ms1_plots(
   Window = 5,
   Sequence = NULL,
   IsotopicPercentageFilter = 10,
-  Interactive = TRUE
+  Interactive = TRUE,
+  AlternativeGlossary = NULL
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ ms1_plots(
 \item{IsotopicPercentageFilter}{Percentage written as a number between 0-100 to filter potential isotopes by relative abundance. Default is 10.}
 
 \item{Interactive}{If True, an interactive plotly graphic will be returned. If False, a static ggplot graphic will be returned. Default is FALSE.}
+
+\item{AlternativeGlossary}{Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
+for formatting.}
 }
 \description{
 Generates a list with two plots: previous and next MS1 within an isolation window, and labeled with isotopes.

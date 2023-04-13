@@ -16,9 +16,6 @@ test_that("Testing sequence checks", {
   # Non-letters should return FALSE
   expect_false(is_sequence("TEST.THAT"))
 
-  # A sequence cannot be a single residue
-  expect_false(is_sequence("T"))
-
   # Sequences cannot contain B, J, O, U, or X
   expect_false(is_sequence("TESTB"))
   

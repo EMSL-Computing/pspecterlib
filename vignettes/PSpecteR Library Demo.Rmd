@@ -196,8 +196,8 @@ error_heatmap_plot(BU_Match)
 The peptide sequence can also be annotated by lowest ppm error per a-c or x-z
 fragment with `sequence_plot`.
 
-```{r sequence plot, fig.width = 8}
-sequence_plot(BU_Match)
+```{r sequence plot, fig.width = 8, fig.height = 8}
+sequence_plot(BU_Match, WrapLength = 6)
 ```
 
 A bar plot of counts of all fragments, fragments without isotopes, and fragments 

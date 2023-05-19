@@ -3,6 +3,8 @@
 #' @param Sequence A valid protein sequence. It may start with "M." which gets removed. Required.
 #' @param Modification An IsoForma modifications annotation written as 
 #'     "PTM,Residue(Positions)[Number of Modifications]". Required. 
+#' @param ReturnUnmodified A TRUE/FALSE to indicate whether the unmodified sequence
+#'     should be returned with the list or not. Default is FALSE. 
 #' @param AlternativeGlossary Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
 #'     for formatting. 
 #'     
@@ -11,7 +13,7 @@
 #' 
 #' # Single modification of a single PTM examples 
 #' multiple_modifications("TRICITIES", "Methyl,I(3)[1]")
-#' multiple_modifications("TRICITIES", "Methyl,I(3,5,7)[1]")
+#' multiple_modifications("TRICITIES", "1.00727,I(3,5,7)[1]")
 #' 
 #' # Multiple modifications of a single PTM example
 #' multiple_modifications("TRICITIES", "Methyl,I(3,5,7)[2]") 
@@ -25,14 +27,17 @@
 #' # Multiple modifications of a single PTM with any "X" residue
 #' multiple_modifications("TRICITIES", "Methyl,X(1,2,3,4,5,6,7,8,9)[2]")
 #' 
-#' # Multiple modifications with multiple PTMs examples 
-#' multiple_modifications("TRICITIES", "Methyl,T(1)[1];Acetyl,X(2,4,9)[1]")
-#' multiple_modifications("TRICITIES", "Methyl,T(1,2,3,4,5,6,7,8,9)[1];Acetyl,X(2,4,9)[1]")
-#' multiple_modifications("TRICITIES", "Methyl,T(1^,2,3,4,5,6,7^,8,9)[3];Acetyl,X(2,4,9)[1]") 
+#' # Multiple modifications with multiple PTMs examples and the base sequence returned
+#' multiple_modifications("TRICITIES", "Methyl,T(1)[1];Acetyl,X(2,4,9)[1]", ReturnUnmodified = TRUE)
+#' multiple_modifications("TRICITIES", "Methyl,T(1,2,3,4,5,6,7,8,9)[1];Acetyl,X(2,4,9)[1]", ReturnUnmodified = TRUE)
+#' multiple_modifications("TRICITIES", "Methyl,T(1^,2,3,4,5,6,7^,8,9)[3];1.00727,X(2,4,9)[1]", ReturnUnmodified = TRUE)
 #' 
 #' }
 #' @export
-multiple_modifications <- function(Sequence, Modification, AlternativeGlossary = NULL) {
+multiple_modifications <- function(Sequence, 
+                                   Modification,
+                                   ReturnUnmodified = FALSE, 
+                                   AlternativeGlossary = NULL) {
   
   ##################
   ## CHECK INPUTS ##
@@ -63,6 +68,11 @@ multiple_modifications <- function(Sequence, Modification, AlternativeGlossary =
   checks <- c(",", "\\(", "\\)", "\\[", "\\]")
   if (all(unlist(lapply(checks, function(x) {grepl(x, Modification)}))) == FALSE) {
     stop("The proper Modification format is PTM,Residue(Positions)Number of Modifications, separated by semicolon.")
+  }
+
+  # Check ReturnUnmodified
+  if (!is.logical(ReturnUnmodified)) {
+    stop("ReturnUnmodified must be TRUE or FALSE.")
   }
   
   #####################################
@@ -128,13 +138,20 @@ multiple_modifications <- function(Sequence, Modification, AlternativeGlossary =
     Glossary <- AlternativeGlossary
   }
   
-  
   # Create a dataframe that is easier to check
   checkMod <- do.call(rbind, Mods)
   
   # Check that the modification is in the glossary
   if (all(unique(checkMod$PTM) %in% Glossary$Modification) == FALSE) {
-    stop(paste("Modification", checkMod$PTM, "is not in the backend glossary."))
+    
+    # Could violations be numeric? 
+    Violations <- unique(checkMod$PTM)[unique(checkMod$PTM) %in% Glossary$Modification == FALSE]
+    Violations <- suppressWarnings(as.numeric(Violations))
+    
+    if (any(is.na(Violations))) {
+      stop(paste("Modification", unique(checkMod$PTM)[is.na(Violations)], "is not in the backend glossary."))
+    }
+    
   }
   
   # Check that the residues are acceptable options
@@ -182,6 +199,11 @@ multiple_modifications <- function(Sequence, Modification, AlternativeGlossary =
     return(SeqS %>% paste0(collapse = ""))
     
   }) %>% unlist()
+  
+  # Add unmodified sequence if requested
+  if (ReturnUnmodified) {
+    Proforma_Strings <- c(Sequence, Proforma_Strings)
+  }
   
   return(Proforma_Strings)
   

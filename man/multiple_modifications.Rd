@@ -4,13 +4,21 @@
 \alias{multiple_modifications}
 \title{A function to generate a list of properly formatted proforma strings}
 \usage{
-multiple_modifications(Sequence, Modification, AlternativeGlossary = NULL)
+multiple_modifications(
+  Sequence,
+  Modification,
+  ReturnUnmodified = FALSE,
+  AlternativeGlossary = NULL
+)
 }
 \arguments{
 \item{Sequence}{A valid protein sequence. It may start with "M." which gets removed. Required.}
 
 \item{Modification}{An IsoForma modifications annotation written as 
 "PTM,Residue(Positions)[Number of Modifications]". Required.}
+
+\item{ReturnUnmodified}{A TRUE/FALSE to indicate whether the unmodified sequence
+should be returned with the list or not. Default is FALSE.}
 
 \item{AlternativeGlossary}{Try a different glossary. See system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib)
 for formatting.}
@@ -23,7 +31,7 @@ A function to generate a list of properly formatted proforma strings
 
 # Single modification of a single PTM examples 
 multiple_modifications("TRICITIES", "Methyl,I(3)[1]")
-multiple_modifications("TRICITIES", "Methyl,I(3,5,7)[1]")
+multiple_modifications("TRICITIES", "1.00727,I(3,5,7)[1]")
 
 # Multiple modifications of a single PTM example
 multiple_modifications("TRICITIES", "Methyl,I(3,5,7)[2]") 
@@ -37,10 +45,10 @@ multiple_modifications("TRICITIES", "Methyl,I(3^,5,7^)[2]")
 # Multiple modifications of a single PTM with any "X" residue
 multiple_modifications("TRICITIES", "Methyl,X(1,2,3,4,5,6,7,8,9)[2]")
 
-# Multiple modifications with multiple PTMs examples 
-multiple_modifications("TRICITIES", "Methyl,T(1)[1];Acetyl,X(2,4,9)[1]")
-multiple_modifications("TRICITIES", "Methyl,T(1,2,3,4,5,6,7,8,9)[1];Acetyl,X(2,4,9)[1]")
-multiple_modifications("TRICITIES", "Methyl,T(1^,2,3,4,5,6,7^,8,9)[3];Acetyl,X(2,4,9)[1]") 
+# Multiple modifications with multiple PTMs examples and the base sequence returned
+multiple_modifications("TRICITIES", "Methyl,T(1)[1];Acetyl,X(2,4,9)[1]", ReturnUnmodified = TRUE)
+multiple_modifications("TRICITIES", "Methyl,T(1,2,3,4,5,6,7,8,9)[1];Acetyl,X(2,4,9)[1]", ReturnUnmodified = TRUE)
+multiple_modifications("TRICITIES", "Methyl,T(1^,2,3,4,5,6,7^,8,9)[3];1.00727,X(2,4,9)[1]", ReturnUnmodified = TRUE)
 
 }
 }

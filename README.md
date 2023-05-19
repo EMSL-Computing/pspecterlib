@@ -21,6 +21,8 @@ Allows users to use the backend functionality of the PSpecteR proteomics visuali
 
 `devtools::install_github("EMSL-Computing/pspecterlib")`
 
+Read our vignette [here](https://emsl-computing.github.io/pspecterlib/)
+
 # Current Package Test Coverage 
 
 86.13% 

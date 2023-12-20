@@ -12,25 +12,25 @@
 #' \dontrun{
 #' 
 #' # Single modification of a single PTM examples 
-#' multiple_modifications("TRICITIES", "Methyl,I(3)[1]")
-#' multiple_modifications("TRICITIES", "1.00727,I(3,5,7)[1]")
+#' multiple_modifications("TRICITIES", "Methyl,(3)[1]")
+#' multiple_modifications("TRICITIES", "1.00727,(3,5,7)[1]")
 #' 
 #' # Multiple modifications of a single PTM example
-#' multiple_modifications("TRICITIES", "Methyl,I(3,5,7)[2]") 
+#' multiple_modifications("TRICITIES", "Methyl,(3,5,7)[2]") 
 #' 
 #' # Multiple modifications with a fixed position
-#' multiple_modifications("TRICITIES", "Methyl,I(3^,5,7)[2]") 
+#' multiple_modifications("TRICITIES", "Methyl,(3^,5,7)[2]") 
 #' 
 #' # Multiple modifications with two fixed positions 
-#' multiple_modifications("TRICITIES", "Methyl,I(3^,5,7^)[2]")
+#' multiple_modifications("TRICITIES", "Methyl,(3^,5,7^)[2]")
 #' 
 #' # Multiple modifications of a single PTM with any "X" residue
-#' multiple_modifications("TRICITIES", "Methyl,X(1,2,3,4,5,6,7,8,9)[2]")
+#' multiple_modifications("TRICITIES", "Methyl,(1,2,3,4,5,6,7,8,9)[2]")
 #' 
 #' # Multiple modifications with multiple PTMs examples and the base sequence returned
-#' multiple_modifications("TRICITIES", "Methyl,T(1)[1];Acetyl,X(2,4,9)[1]", ReturnUnmodified = TRUE)
-#' multiple_modifications("TRICITIES", "Methyl,T(1,2,3,4,5,6,7,8,9)[1];Acetyl,X(2,4,9)[1]", ReturnUnmodified = TRUE)
-#' multiple_modifications("TRICITIES", "Methyl,T(1^,2,3,4,5,6,7^,8,9)[3];1.00727,X(2,4,9)[1]", ReturnUnmodified = TRUE)
+#' multiple_modifications("TRICITIES", "Methyl,(1)[1];Acetyl,(2,4,9)[1]", ReturnUnmodified = TRUE)
+#' multiple_modifications("TRICITIES", "Methyl,(1,2,3,4,5,6,7,8,9)[1];Acetyl,(2,4,9)[1]", ReturnUnmodified = TRUE)
+#' multiple_modifications("TRICITIES", "Methyl,(1^,2,3,4,5,6,7^,8,9)[3];1.00727,(2,4,9)[1]", ReturnUnmodified = TRUE)
 #' 
 #' }
 #' @export
@@ -69,7 +69,7 @@ multiple_modifications <- function(Sequence,
   if (all(unlist(lapply(checks, function(x) {grepl(x, Modification)}))) == FALSE) {
     stop("The proper Modification format is PTM,Residue(Positions)Number of Modifications, separated by semicolon.")
   }
-
+  
   # Check ReturnUnmodified
   if (!is.logical(ReturnUnmodified)) {
     stop("ReturnUnmodified must be TRUE or FALSE.")
@@ -82,26 +82,36 @@ multiple_modifications <- function(Sequence,
   # Split into dataframes to iterate through
   Mods <- lapply(unlist(strsplit(Modification, ";")), function(x) {
     
-    # Get the modifications
-    Mods <- dplyr::bind_rows(
-      PTM  = strsplit(x, ",") %>% unlist() %>% head(1),
-      Residues = x %>% strsplit(",|\\(") %>% unlist() %>% head(2) %>% tail(1),
-      Positions = x %>% strsplit("\\(|\\)") %>% unlist() %>% head(2) %>% 
-        tail(1) %>% strsplit(",") %>% unlist(),
-      ModNum = x %>% strsplit("\\[") %>% unlist() %>% tail(1) %>% 
-        gsub(pattern = "\\]", replacement = "") %>% as.numeric()
-    )
+    ModNums = x %>% strsplit("\\[") %>% unlist() %>% tail(1) %>% 
+      gsub(pattern = "\\]", replacement = "") %>% strsplit(",") %>% unlist() %>% as.numeric() %>% c()
+    
+    Mods = tibble::tibble()
+    for(i in ModNums){
+      # Get the modifications
+      Mods1 <- dplyr::bind_rows(
+        PTM  = strsplit(x, ",") %>% unlist() %>% head(1),
+        Positions = x %>% strsplit("\\(|\\)") %>% unlist() %>% head(2) %>% 
+          tail(1) %>% strsplit(",") %>% unlist(),
+        ModNum = i
+      )
+      Mods <- dplyr::bind_rows(Mods, Mods1)
+    }
     
     # If ModNum is greater than 1, generate the results with the commas in them
-    if (unique(Mods$ModNum) > 1) {
-      
-      Mods <- tibble::tibble(
-        PTM = Mods$PTM[1],
-        Residues = Mods$Residues[1],
-        Positions = utils::combn(Mods$Positions, Mods$ModNum[1]) %>% apply(2, function(x) paste(x, collapse = ",")),
-        ModNum = Mods$ModNum[1]
-      )
-    }
+    Mods_temp <- tibble::tibble()
+    Mods_1s <- tibble::tibble()
+    for(j in unique(Mods$ModNum)){
+      if (j > 1) {
+        Mods_multis <- tibble::tibble(
+          PTM = Mods$PTM[1],
+          Positions = utils::combn(unique(Mods$Positions), j) %>% apply(2, function(x) paste(x, collapse = ",")),
+          ModNum = j
+        )
+        Mods_temp <- dplyr::bind_rows(Mods_temp, Mods_multis)
+      }else{
+        Mods_1s <- Mods[which(Mods$ModNum == 1),]
+      }}
+    Mods <- dplyr::bind_rows(Mods_1s, Mods_temp)
     
     # Filter by fixed positions
     if (any(grepl("^", Mods$Positions, fixed = T))) {
@@ -111,17 +121,18 @@ multiple_modifications <- function(Sequence,
       
       # Subset down to appropriate number of fixed positions
       fixed_pos <- Mods$Positions[stringr::str_count(Mods$Positions, stringr::fixed("^")) == mod_fixed_count]
+      print(fixed_pos %>% strsplit(Mods$Positions, ",") %>% lengths())
       
       # Now, remove the symbols and make the Mods tibble
       Mods <- tibble::tibble(
         PTM = Mods$PTM[1],
-        Residues = Mods$Residues[1],
         Positions = gsub("^", "", fixed_pos, fixed = T),
-        ModNum = Mods$ModNum[1]
       )
+      print(Mods)
+      Mods = Mods %>% dplyr::mutate(ModNum = (strsplit(Mods$Positions, ",") %>% lengths))
+      print(Mods)
       
     } 
-    
     return(Mods)
     
   })
@@ -154,11 +165,6 @@ multiple_modifications <- function(Sequence,
     
   }
   
-  # Check that the residues are acceptable options
-  if (any(unique(checkMod$Residues) %in% c("B", "J", "O", "U", "Z"))) {
-    stop("B, J, O, U, and Z are not acceptable inputs for residues.")
-  }
-  
   #####################
   ## COMBINE OPTIONS ##
   #####################
@@ -183,6 +189,7 @@ multiple_modifications <- function(Sequence,
     ModsToApply <- do.call(rbind, lapply(1:length(accessList), function(el) {
       Mods[[el]][accessList[el],]
     }))
+    print(ModsToApply)
     
     # Format PTM and position
     PTM_Names <- lapply(1:nrow(ModsToApply), function(theX) {rep(ModsToApply$PTM[theX], ModsToApply$ModNum[theX])}) %>% unlist()

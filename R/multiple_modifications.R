@@ -121,16 +121,13 @@ multiple_modifications <- function(Sequence,
       
       # Subset down to appropriate number of fixed positions
       fixed_pos <- Mods$Positions[stringr::str_count(Mods$Positions, stringr::fixed("^")) == mod_fixed_count]
-      print(fixed_pos %>% strsplit(Mods$Positions, ",") %>% lengths())
       
       # Now, remove the symbols and make the Mods tibble
       Mods <- tibble::tibble(
         PTM = Mods$PTM[1],
         Positions = gsub("^", "", fixed_pos, fixed = T),
       )
-      print(Mods)
       Mods = Mods %>% dplyr::mutate(ModNum = (strsplit(Mods$Positions, ",") %>% lengths))
-      print(Mods)
       
     } 
     return(Mods)
@@ -189,7 +186,6 @@ multiple_modifications <- function(Sequence,
     ModsToApply <- do.call(rbind, lapply(1:length(accessList), function(el) {
       Mods[[el]][accessList[el],]
     }))
-    print(ModsToApply)
     
     # Format PTM and position
     PTM_Names <- lapply(1:nrow(ModsToApply), function(theX) {rep(ModsToApply$PTM[theX], ModsToApply$ModNum[theX])}) %>% unlist()

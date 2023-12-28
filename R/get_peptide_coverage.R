@@ -153,7 +153,7 @@ get_peptide_coverage <- function(ScanMetadata,
     table(dnn = "Residue") %>%
     data.frame() %>%
     dplyr::mutate(
-      "Position" = gsub("[[:alpha:]]", "", Residue) %>% as.numeric()
+      "Position" = suppressWarnings({gsub("[[:alpha:]]", "", Residue) %>% as.numeric()})
     ) %>%
     dplyr::arrange(Position) %>%
     data.table::data.table()

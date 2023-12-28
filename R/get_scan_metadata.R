@@ -230,7 +230,7 @@ get_scan_metadata <- function(MSPath,
     ID <- mzR::openIDfile(IDPath)
     PSMS <- ID %>% mzR::psms() %>% data.table::data.table()
     Score <- ID %>% mzR::score() %>% data.table::data.table()
-    MergedGroup <- dplyr::left_join(PSMS, Score, by = "spectrumID") %>% unique()
+    MergedGroup <- dplyr::left_join(PSMS, Score, by = "spectrumID", relationship = "many-to-many") %>% unique()
 
     # If modifications exist, convert amino acid sequences to ProForma strings
     if (nrow(mzR::modifications(ID)) > 0) {
@@ -257,7 +257,7 @@ get_scan_metadata <- function(MSPath,
         dplyr::select(-Name)
       
       # Merged MODs and replace sequences with non NA Proteoforms
-      MergedGroup <- dplyr::left_join(MergedGroup, MOD, by = "spectrumID") %>% 
+      MergedGroup <- dplyr::left_join(MergedGroup, MOD, by = "spectrumID", relationship = "many-to-many") %>% 
         unique() %>%
         dplyr::mutate(sequence = ifelse(is.na(Proteoform), sequence, Proteoform))
       

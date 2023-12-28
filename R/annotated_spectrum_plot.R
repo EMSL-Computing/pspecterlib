@@ -113,7 +113,7 @@ annotated_spectrum_plot <- function(PeakData,
 
     # Generate plot
     Spectrum <- ggplot2::ggplot(Peaks, ggplot2::aes(x = `M/Z`, y = Intensity)) +
-      ggplot2::theme_bw() + ggplot2::geom_line(size = 1) +
+      ggplot2::theme_bw() + ggplot2::geom_line(linewidth = 1) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
 
     # Return interactive if requested

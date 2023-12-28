@@ -64,7 +64,7 @@ ms1_plots <- function(ScanMetadata,
   ScanNumber <- round(ScanNumber)
 
   # Assert that scan number is for a MS2 scan
-  MS2_check <- ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "MS Level"] == 2
+  MS2_check <- head(ScanMetadata[ScanMetadata$`Scan Number` == ScanNumber, "MS Level"], 1) == 2
   if (length(MS2_check) == 0 || MS2_check == FALSE) {
     stop("ScanNumber must be for a scan with an MS Level of 2.")
   }
@@ -285,11 +285,11 @@ ms1_plots <- function(ScanMetadata,
 
   # Make plots
   PreviousMS1 <- ggplot2::ggplot(PreviousPeaks, ggplot2::aes(x = `M/Z`, y = Intensity, color = `Peak Description`)) +
-    ggplot2::theme_bw() + ggplot2::geom_line(size = 1) + ggplot2::scale_color_manual(values = ColorListPre) +
+    ggplot2::theme_bw() + ggplot2::geom_line(linewidth = 1) + ggplot2::scale_color_manual(values = ColorListPre) +
     ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
   if (!is.na(NextMS1ScanNum)) {
     NextMS1 <- ggplot2::ggplot(NextPeaks, ggplot2::aes(x = `M/Z`, y = Intensity, color = `Peak Description`)) +
-      ggplot2::theme_bw() + ggplot2::geom_line(size = 1) + ggplot2::scale_color_manual(values = ColorListNext) +
+      ggplot2::theme_bw() + ggplot2::geom_line(linewidth = 1) + ggplot2::scale_color_manual(values = ColorListNext) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
   }
 

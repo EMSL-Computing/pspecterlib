@@ -30,25 +30,25 @@ A function to generate a list of properly formatted proforma strings
 \dontrun{
 
 # Single modification of a single PTM examples 
-multiple_modifications("TRICITIES", "Methyl,I(3)[1]")
-multiple_modifications("TRICITIES", "1.00727,I(3,5,7)[1]")
+multiple_modifications("TRICITIES", "Methyl,(3)[1]")
+multiple_modifications("TRICITIES", "1.00727,(3,5,7)[1]")
 
 # Multiple modifications of a single PTM example
-multiple_modifications("TRICITIES", "Methyl,I(3,5,7)[2]") 
+multiple_modifications("TRICITIES", "Methyl,(3,5,7)[2]") 
 
 # Multiple modifications with a fixed position
-multiple_modifications("TRICITIES", "Methyl,I(3^,5,7)[2]") 
+multiple_modifications("TRICITIES", "Methyl,(3^,5,7)[2]") 
 
 # Multiple modifications with two fixed positions 
-multiple_modifications("TRICITIES", "Methyl,I(3^,5,7^)[2]")
+multiple_modifications("TRICITIES", "Methyl,(3^,5,7^)[2]")
 
 # Multiple modifications of a single PTM with any "X" residue
-multiple_modifications("TRICITIES", "Methyl,X(1,2,3,4,5,6,7,8,9)[2]")
+multiple_modifications("TRICITIES", "Methyl,(1,2,3,4,5,6,7,8,9)[2]")
 
 # Multiple modifications with multiple PTMs examples and the base sequence returned
-multiple_modifications("TRICITIES", "Methyl,T(1)[1];Acetyl,X(2,4,9)[1]", ReturnUnmodified = TRUE)
-multiple_modifications("TRICITIES", "Methyl,T(1,2,3,4,5,6,7,8,9)[1];Acetyl,X(2,4,9)[1]", ReturnUnmodified = TRUE)
-multiple_modifications("TRICITIES", "Methyl,T(1^,2,3,4,5,6,7^,8,9)[3];1.00727,X(2,4,9)[1]", ReturnUnmodified = TRUE)
+multiple_modifications("TRICITIES", "Methyl,(1)[1];Acetyl,(2,4,9)[1]", ReturnUnmodified = TRUE)
+multiple_modifications("TRICITIES", "Methyl,(1,2,3,4,5,6,7,8,9)[1];Acetyl,(2,4,9)[1]", ReturnUnmodified = TRUE)
+multiple_modifications("TRICITIES", "Methyl,(1^,2,3,4,5,6,7^,8,9)[3];1.00727,(2,4,9)[1]", ReturnUnmodified = TRUE)
 
 }
 }

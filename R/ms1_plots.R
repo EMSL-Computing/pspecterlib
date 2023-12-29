@@ -190,13 +190,13 @@ ms1_plots <- function(ScanMetadata,
     class(Convert) <- "data.frame"
     
     # Extract named modifications
-    Named <- Glossary[Glossary$Modification %in% Convert$Name,]
+    Named <- Convert[Convert$Name %in% Glossary$Modification,]
     
-    if (length(Named) != 0) {
+    if (nrow(Named) != 0) {
       
       for (row in 1:nrow(Named)) {
         
-        premolform <- Named[row, 4:ncol(Glossary)] %>% 
+        premolform <- Glossary[Glossary$Modification == Named$Name, 4:ncol(Glossary)] %>% 
           dplyr::select(colnames(.)[!is.na(.)]) %>% 
           paste0(colnames(.), ., collapse = "")
         
@@ -222,10 +222,10 @@ ms1_plots <- function(ScanMetadata,
   if (!is.character(Convert)) {
     
     # Extract mass modifications
-    MassChange <- Glossary[Glossary$Modification %in% Convert$Name == FALSE,]
+    MassChange <- Convert[Convert$Name %in% Glossary$Modification == FALSE,]
     
     if (nrow(MassChange) > 0) {
-      IsoDist$`M/Z` <- IsoDist$`M/Z` + sum(Convert$`AMU Change`)
+      IsoDist$`M/Z` <- IsoDist$`M/Z` + sum(MassChange$`AMU Change`)
     }
     
   }

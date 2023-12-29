@@ -148,11 +148,20 @@ test_that("Testing ms1 plot plotting function", {
     ScanNumber = 29255,
     Interactive = F,
     AlternativeGlossary = Glossary[Glossary$Modification == "Oxidation",],
-    Sequence = "AAEM[Oxidation]M[Oxidation]VQCLLGGNK"
+    Sequence = "AAEM[Oxidation]M[15.223]VQCLLGGNK"
   )
   expect_true(inherits(thePlots8[[1]], "ggplot"))
   
-  # Now use a sequence that shouldn't work
+  # Do only mass modifications
+  thePlots9 <- ms1_plots(
+    ScanMetadata = BU_ScanMetadata,
+    ScanNumber = 29255,
+    Interactive = F,
+    Sequence = "AAEM[15.99]M[15.99]VQCLLGGNK"
+  )
+  expect_true(inherits(thePlots9[[1]], "ggplot"))
+  
+  # Now use a sequence that shouldn't work because it isn't in the alternative glossary
   expect_error(
     ms1_plots(
       ScanMetadata = BU_ScanMetadata,
@@ -164,4 +173,17 @@ test_that("Testing ms1 plot plotting function", {
     "Sequence is not an acceptable input. See is_sequence."
   )
 
+  # Expect an error when the window is too small
+  expect_error(
+    suppressMessages(ms1_plots(
+      ScanMetadata = BU_ScanMetadata,
+      ScanNumber = 29255,
+      Interactive = F,
+      AlternativeGlossary = Glossary[Glossary$Modification == "Oxidation",],
+      Sequence = "AAEM[Oxidation]M[Oxidation]VQCLLGGNK", 
+      Window = 1e-10
+    ))
+  )
+  
+  
 })

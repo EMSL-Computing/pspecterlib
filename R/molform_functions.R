@@ -114,6 +114,9 @@ collapse_molform <- function(molform) {
   # Remove 0 
   collapsed <- molform[molform != 0]
   
+  # Change 1 to empty string
+  collapsed[collapsed == 1] <- ""
+  
   # Paste results
   return(paste0(names(collapsed), collapsed, sep = "", collapse = ""))
   

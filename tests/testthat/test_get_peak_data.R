@@ -44,6 +44,12 @@ test_that("Testing get peak data function", {
     get_peak_data(BU_ScanMetadata, 30000, 101),
     "MinAbundance needs to range between 0 and 100."
   )
+  
+  # Min Intensity should be a number
+  expect_error(
+    get_peak_data(BU_ScanMetadata, 30000, MinIntensity = "cats"),
+    "MinIntensity should be a number."
+  )
 
   # Create a peak_data object---------------------------------------------------
 

@@ -7,7 +7,7 @@ test_that("Testing get matched peaks function", {
   source(system.file("tests/testthat/file_check.R", package = "pspecterlib"))
   downfolder <- file_check("downfolder")
   BU_ScanMetadata <- file_check("BU")
-  BU_Peaks <- get_peak_data(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728)
+  BU_Peak <- get_peak_data(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728)
 
   # Test get_peak_data input checks---------------------------------------------
 
@@ -27,7 +27,7 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       PPMThreshold = "12"
     ),
     "PPMThreshold must be a single number."
@@ -37,7 +37,7 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       IonGroups = c("a", "b", "c", "x", "y", "z", "aa")
     ),
     "IonGroups cannot be longer than length 6."
@@ -47,7 +47,7 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       IonGroups = c("aa")
     ),
     "IonGroups must only contain the letters a, b, c, x, y, and z."
@@ -57,7 +57,7 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       CalculateIsotopes = NA
     ),
     "CalculateIsotopes must be a single logical value TRUE or FALSE."
@@ -67,17 +67,27 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       MinimumAbundance = "2"
     ),
     "MinimumAbundance must be a single numeric value. For example, 0.1."
+  )
+  
+  # MinimumAbundance can't be larger than 100
+  expect_error(
+    get_matched_peaks(
+      ScanMetadata = BU_ScanMetadata,
+      PeakData = BU_Peak,
+      MinimumAbundance = 100.5
+    ),
+    "MinimumAbundance must be between 0 and 100."
   )
 
   # Correlation Score must be a numeric
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       CorrelationScore = "2"
     ),
     "CorrelationScore must be a single numeric value. For example, 0.1."
@@ -87,17 +97,27 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       CorrelationScore = 2
     ),
     "CorrelationScore must be between 0 and 1."
+  )
+  
+  # MatchingAlgorithm must be one of two options
+  expect_error(
+    get_matched_peaks(
+      ScanMetadata = BU_ScanMetadata,
+      PeakData = BU_Peak,
+      MatchingAlgorithm = "yummytoast"
+    ),
+    "MatchingAlgorithm must be 'closest peak' or 'highest abundance'"
   )
 
   # Alternative Sequence must be a valid protein sequence
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       AlternativeSequence = "INVALIDSEQUENCE"
     ),
     "The detected sequence: INVALIDSEQUENCE is not acceptable."
@@ -107,7 +127,7 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       AlternativeSpectrum = data.frame(test = 1)
     ),
     "AlternativeSpectrum must be made with make_peak_data."
@@ -117,7 +137,7 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       AlternativeCharge = c(2, 3)
     ),
     "AlternativeCharge must be a single number."
@@ -127,7 +147,7 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       AlternativeCharge = c(2, 3)
     ),
     "AlternativeCharge must be a single number."
@@ -137,7 +157,7 @@ test_that("Testing get matched peaks function", {
   expect_error(
     get_matched_peaks(
       ScanMetadata = BU_ScanMetadata,
-      PeakData = BU_Peaks,
+      PeakData = BU_Peak,
       AlternativeIonGroups = data.frame(test = 1)
     ),
     "AlernativeIonGroups must be of the class 'modified_ion' from make_mass_modified_ion."
@@ -146,16 +166,42 @@ test_that("Testing get matched peaks function", {
   # Create a matched_peaks object-----------------------------------------------
 
   # First, run the defaults
-  BU_MatchedPeaks <- get_matched_peaks(BU_ScanMetadata, BU_Peaks, CorrelationScore_FilterNA = TRUE)
+  BU_MatchedPeaks <- get_matched_peaks(BU_ScanMetadata, BU_Peak, CorrelationScore_FilterNA = TRUE)
   expect_true(inherits(BU_MatchedPeaks, "matched_peaks"))
 
   # Second, run an example with alternatives
   BU_MatchedPeaks2 <- get_matched_peaks(
-    AlternativeSpectrum = make_peak_data(MZ = BU_Peaks$`M/Z`, Intensity = BU_Peaks$Intensity),
+    AlternativeSpectrum = make_peak_data(MZ = BU_Peak$`M/Z`, Intensity = BU_Peak$Intensity),
     AlternativeCharge = 2,
     AlternativeSequence = "TESTTEST[Acetyl]TESTTEST",
     AlternativeIonGroups = make_mass_modified_ion(Ion = "a", Symbol = "+", AMU_Change = 1),
   )
   expect_null(BU_MatchedPeaks2)
+  
+  # Trigger a multiple sequences message
+  expect_message(
+    get_matched_peaks(
+      ScanMetadata = BU_ScanMetadata,
+      PeakData = get_peak_data(BU_ScanMetadata, 29135)
+    ),
+    "Multiple sequences detected. Select one and pass it to AlternativeSequence. Your options are: RVPHPAYGKEKIPAYDMIK, ADAKTDKPKAEVVETVTDAPK"
+  )
+  
+  # Trigger a NA sequence
+  expect_message(
+    get_matched_peaks(
+      ScanMetadata = BU_ScanMetadata,
+      PeakData = get_peak_data(BU_ScanMetadata, 29126)
+    ),
+    "Sequence is NA"
+  )
+  
+  # Use an alternative glossary
+  Glossary <- data.table::fread(system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib"))
+  BU_MatchedPeaks3 <- get_matched_peaks(PeakData = BU_Peak, 
+                                        AlternativeSequence = "IGA[Acetyl]VGGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIGAGLNK", 
+                                        AlternativeCharge = 5,
+                                        AlternativeGlossary = Glossary[Glossary$Modification == "Acetyl",])
+
 
 })

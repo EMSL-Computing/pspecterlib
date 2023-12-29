@@ -4,6 +4,10 @@ test_that("Testing sequence plot plotting function", {
 
   # Download required test files------------------------------------------------
 
+  source(system.file("tests/testthat/file_check.R", package = "pspecterlib"))
+  downfolder <- file_check("downfolder")
+  BU_ScanMetadata <- file_check("BU")
+  BU_Peak <- get_peak_data(ScanMetadata = BU_ScanMetadata, ScanNumber = 31728)
   BU_Match <- readRDS(system.file("testdata", "BU_Match.RDS", package = "pspecterlib"))
 
   # Test sequence plot input checks---------------------------------------------
@@ -26,6 +30,12 @@ test_that("Testing sequence plot plotting function", {
     "RemoveChargeAnnotation needs to be a single logical: a TRUE or FALSE."
   )
 
+  # RemoveModification should be a single logical 
+  expect_error(
+    sequence_plot(BU_Match, RemoveModification = "cats"),
+    "RemoveModification needs to be a single logical: a TRUE or FALSE"
+  )
+  
   # WrapLength should be an integer
   expect_error(
     sequence_plot(BU_Match, WrapLength = TRUE),
@@ -41,6 +51,13 @@ test_that("Testing sequence plot plotting function", {
   # Make another without charge annotations
   SeqPlot2 <- sequence_plot(BU_Match, RemoveChargeAnnotation = TRUE)
   expect_true(inherits(SeqPlot2, "ggplot"))
+  
+  # Get a spectra with a modification
+  BU_Match_Mod <- get_matched_peaks(PeakData = BU_Peak, 
+                    AlternativeSequence = "IGA[Acetyl]VGGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIGAGLNK", 
+                    AlternativeCharge = 5)
+  SeqPlot3 <- sequence_plot(BU_Match_Mod)
+  expect_true(inherits(SeqPlot3, "ggplot"))
 
 
 })

@@ -73,7 +73,7 @@ ms1_plots <- function(ScanMetadata,
   if (!is.numeric(Window) || length(Window) > 1) {
     stop("Window must be a single integer.")
   }
-
+  
   # Check sequence
   if (!is.null(Sequence)) {
     

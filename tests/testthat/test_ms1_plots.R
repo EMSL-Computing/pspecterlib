@@ -140,5 +140,28 @@ test_that("Testing ms1 plot plotting function", {
     )
   ))
   expect_true(inherits(thePlots7[[1]], "ggplot"))
+  
+  # Use an alternative glossary
+  Glossary <- data.table::fread(system.file("extdata", "Unimod_v20220602.csv", package = "pspecterlib"))
+  thePlots8 <- ms1_plots(
+    ScanMetadata = BU_ScanMetadata,
+    ScanNumber = 29255,
+    Interactive = F,
+    AlternativeGlossary = Glossary[Glossary$Modification == "Oxidation",],
+    Sequence = "AAEM[Oxidation]M[Oxidation]VQCLLGGNK"
+  )
+  expect_true(inherits(thePlots8[[1]], "ggplot"))
+  
+  # Now use a sequence that shouldn't work
+  expect_error(
+    ms1_plots(
+      ScanMetadata = BU_ScanMetadata,
+      ScanNumber = 29255,
+      Interactive = F,
+      AlternativeGlossary = Glossary[Glossary$Modification == "Acetyl",],
+      Sequence = "AAEM[Oxidation]M[Oxidation]VQCLLGGNK"
+    ),
+    "Sequence is not an acceptable input. See is_sequence."
+  )
 
 })

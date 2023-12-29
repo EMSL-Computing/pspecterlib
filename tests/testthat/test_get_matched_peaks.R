@@ -202,6 +202,16 @@ test_that("Testing get matched peaks function", {
                                         AlternativeSequence = "IGA[Acetyl]VGGTENVSLTQSQMPAHNHLVAASTVSGTVKPLANDIIGAGLNK", 
                                         AlternativeCharge = 5,
                                         AlternativeGlossary = Glossary[Glossary$Modification == "Acetyl",])
-
+  BU_MatchedPeaks4 <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, 
+                                        PeakData = get_peak_data(BU_ScanMetadata, 32058),
+                                        AlternativeGlossary = Glossary[Glossary$Modification == "Oxidation",],
+                                        AlternativeIonGroups = make_mass_modified_ion(Ion = c("b", "z"),
+                                                                                      Symbol = c("+", "+"),
+                                                                                      AMU_Change = c(1.00727647, 1.00727647)),
+                                        MatchingAlgorithm = "highest abundance")
+  
+  # Filter everything!! 
+  BU_MatchPeaks5 <- get_matched_peaks(BU_ScanMetadata, BU_Peak, CorrelationScore_FilterNA = TRUE, CorrelationScore = 1)
+  expect_null(BU_MatchPeaks5)
 
 })

@@ -1,8 +1,8 @@
 Package: pspecterlib
 Type: Package
 Title: PSpecteR Library - Visualization tools for top-down and bottom-up proteomics data
-Version: 1.1.0
-Date: 2023-04-13
+Version: 1.1.1
+Date: 2024-01-01
 Authors@R: c(person("David", "Degnan", email = "david.degnan@pnnl.gov", role = c("aut", "cre")))
 Description: Provides functionality to visually examine LC-MS top-down and bottom-up proteomics data. Supports reading various mass spectrometry files, labeling spectra with fragmenetation patterns, testing post-translational modifications, plotting where identified fragments map to reference sequences, and visualizing algorithmic output from database search tools (MSPathFinder) and metadata. 
 License: MIT + file LICENSE
@@ -12,8 +12,9 @@ URL: https://github.com/emsl-computing/pspecter-lib
 BugReports: https://github.com/emsl-computing/pspecter-lib/issues
 VignetteBuilder: knitr
 biocViews:
+    rawrr
 Imports: 
-    rhdf5,
+    rawrr,
     mzR,
     MSnbase,
     lsa,
@@ -35,8 +36,6 @@ Imports:
 Suggests: 
     rmarkdown,
     knitr
-Remotes:
-    fgcz/rawrr
 RoxygenNote: 7.2.3
 Encoding: UTF-8
 NeedsCompilation: yes

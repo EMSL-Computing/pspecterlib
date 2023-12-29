@@ -25,3 +25,16 @@ Allows users to use the backend functionality of the PSpecteR proteomics visuali
 `devtools::install_github("EMSL-Computing/pspecterlib")`
 
 Read our vignette [here](https://emsl-computing.github.io/pspecterlib/)
+
+# What does "PSpecteR" mean? 
+
+Excellent question! We get the name from **P**roteomics Mass **Spect**rum Insp**e**cto**r**!
+The last R is capitalized for the language it's written in. Now we know what you're 
+thinking. Why isn't it PSpectoR, then? Well, our logo is a ghost inspector named
+Inspector Specter. So we chose "specter". Now you know, and are empowered with 
+this knowledge.
+
+
+
+
+

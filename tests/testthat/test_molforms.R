@@ -102,12 +102,96 @@ test_that("Testing molform functions", {
   # Molform should be the proper object
   expect_error(
     get_aa_molform("BADSEQUENCE"),
-    "BADSEQUENCE is not an acceptable amino acid sequence. See ?is_sequence.", fixed = T
+    "BADSEQUENCE is not an acceptable amino acid sequence. See ?is_sequence.", 
+    fixed = T
   )
   
-  # 
+  # Test calc_iso_profile-------------------------------------------------------
   
+  # Molform should be the proper object
+  expect_error(
+    calculate_iso_profile("C2"),
+    "molform should be an object from the molform class."
+  )
   
+  # Algorithm should be Rdisop or isopat
+  expect_error(
+    calculate_iso_profile(as.molform("C2"), algorithm = "tacos"),
+    "algorithm must either be 'isopat' or 'Rdisop'."
+  )
   
+  # Min abundance should be a single numeric between 0 and 100
+  expect_error(
+    calculate_iso_profile(as.molform("C2"), min_abundance = "burritos"),
+    "min_abundance should be a single numeric."
+  )
+  expect_error(
+    calculate_iso_profile(as.molform("C2"), min_abundance = 110),
+    "The range of min_abundance is between 0 and 100."
+  )
+  
+  # Use isopat and Rdsiop
+  iso1 <- calculate_iso_profile(as.molform("C2"), algorithm = "isopat")
+  iso2 <- calculate_iso_profile(as.molform("C2"), algorithm = "Rdisop")
+  
+  # Test is_sequence------------------------------------------------------------
+  
+  # Let users know when no sequence is provided
+  expect_message(
+    is_sequence(Sequence = NA, Message = T),
+    "No sequence provided."
+  )
+  
+  # Square brackets must be completed
+  expect_message(
+    is_sequence("TEST[NTEST", Message = T),
+    "Square bracket pairs must be completed."
+  )
+  
+  # Spaces not permitted
+  expect_message(
+    is_sequence("TEST TEST", Message = T),
+    "Space not permitted."
+  )
+  
+  # Let user know of unrecognized sequence
+  expect_message(
+    is_sequence("TEST[NOTREAL]TEST", Message = T),
+    "Unrecognized modification format. See the Glossary for more details."
+  )
+  
+  # Let users know that only letters are allowed while not in brackets
+  expect_message(
+    is_sequence("TEST1TEST", Message = T),
+    "The sequence with modifications and their brackets removed should be only letters."
+  )
+  
+  # Let users know that non-traditional AA are not allowed at this time
+  expect_message(
+    is_sequence("BOJO", Message = T),
+    "B, J, O, U, X, and Z are not acceptable amino acids at this time."
+  )
+  
+  # Test convert_proforma-------------------------------------------------------
+  
+  # ProForma should be a string
+  expect_error(
+    convert_proforma(TRUE),
+    "proforma must be a vector of characters."
+  )
+  
+  # ProForma can't have multiple periods in the string (not including square brackets)
+  pro_convert1 <- convert_proforma("M.TT[22.3].S")
+  expect_error(
+    convert_proforma("M.TL.L.TT..S.M"),
+    "There are too many periods in the input proforma stringM.TL.L.TT..S.M",
+    fixed = T
+  )
+  
+  # ProForma can't have an unregistered modification
+  expect_error(
+    convert_proforma("M.TTT[Balogna]SS.S"),
+    "Modification Balogna is not in our library. If no input error is found, submit an issue request on github."
+  )
   
 })

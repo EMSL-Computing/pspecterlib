@@ -87,7 +87,7 @@ error_heatmap_plot <- function(MatchedPeaks,
   Heatmap$`Ion Type` <- UniqueIonTypes
 
   # Take the heatmap and pivot longer for ease of plotting
-  Heatmap <- Heatmap %>% tidyr::pivot_longer(Residues)
+  Heatmap <- Heatmap %>% tidyr::pivot_longer(dplyr::all_of(Residues))
   colnames(Heatmap)[2:3] <- c("Residues", "PPM Error")
 
   # Order heatmap residues

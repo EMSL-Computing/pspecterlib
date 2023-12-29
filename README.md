@@ -4,7 +4,7 @@
 
 # The PSpecteR Library (pspecterlib)
 
-<img src="PSpecteR_Logo.png" alt="PSpecteR_Logo" style="width:300px;margin-right: 40px;" align="left"/>
+<img src="PSpecteR_Logo.png" alt="PSpecteR_Logo" style="width:320px;margin-right: 40px;" align="left"/>
 
 Allows users to use the backend functionality of the PSpecteR proteomics visualization application independent of the app. 
 

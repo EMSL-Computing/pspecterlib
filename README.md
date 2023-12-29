@@ -3,6 +3,9 @@
   <!-- badges: end -->
 
 # The PSpecteR Library (pspecterlib)
+
+./Logo.png
+
 Allows users to use the backend functionality of the PSpecteR proteomics visualization application independent of the app. 
 
 **Highlights of PSpecteR functionality include:**
@@ -22,7 +25,3 @@ Allows users to use the backend functionality of the PSpecteR proteomics visuali
 `devtools::install_github("EMSL-Computing/pspecterlib")`
 
 Read our vignette [here](https://emsl-computing.github.io/pspecterlib/)
-
-# Current Package Test Coverage 
-
-86.13% 

@@ -4,7 +4,7 @@ author: "Degnan, David J"
 date: "April 1, 2023"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Bottom_Up_Example}
+  %\VignetteIndexEntry{PSpecteR_Library_Demo.Rmd}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

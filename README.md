@@ -4,17 +4,17 @@
 
 # The PSpecteR Library (pspecterlib)
 
-<img src="PSpecteR_Logo.png" alt="PSpecteR_Logo" style="float: left;"/>
+<img src="PSpecteR_Logo.png" alt="PSpecteR_Logo" style="width:300px;margin-right: 40px;" align="left"/>
 
 Allows users to use the backend functionality of the PSpecteR proteomics visualization application independent of the app. 
 
 **Highlights of PSpecteR functionality include:**
 
-1. Calculating and visualizing peptide/protein fragmentation patterns on experimental spectra
-2. Generating extracted ion chromatograms (XICs)
-3. Mapping identified peptides to protein sequences
-4. Testing alternative peptides and mass modified ions 
-5. Visualizing output from MSPathFinderT
+* Calculating and visualizing peptide/protein fragmentation patterns on experimental spectra 
+* Generating extracted ion chromatograms (XICs)
+* Mapping identified peptides to protein sequences
+* Testing alternative peptides and mass modified ions  
+* Visualizing output from MSPathFinderT
 
 ...for both top-down and bottom-up proteomics. 
 

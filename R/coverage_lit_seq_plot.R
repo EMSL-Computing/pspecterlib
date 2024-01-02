@@ -50,7 +50,7 @@ coverage_lit_seq_plot <- function(PeptideCoverage) {
   # Make plotting data.table
   LitSeqDF <- data.table::data.table(
     "x" = rep_len(1:60, nchar(LitSeq)),
-    "y" = (1:nchar(LitSeq) / -60) %>% floor(),
+    "y" = floor(1:nchar(LitSeq) / -60),
     "Residue" = LitSeq %>% strsplit("") %>% unlist(),
     "Ref" = ifelse(1:nchar(LitSeq) %in% Residues$Position, "In Scans", "Not in Scans")
   )

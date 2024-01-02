@@ -6,7 +6,8 @@
 
 <img src="PSpecteR_Logo.png" alt="PSpecteR_Logo" style="width:320px;margin-right: 40px;" align="left"/>
 
-Allows users to use the backend functionality of the PSpecteR proteomics visualization application independent of the app. 
+Allows for the use of backend functionality of the PSpecteR proteomics visualization 
+application independent of the app. 
 
 **Highlights of PSpecteR functionality include:**
 

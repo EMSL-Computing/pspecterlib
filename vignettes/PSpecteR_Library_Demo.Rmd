@@ -4,7 +4,7 @@ author: "Degnan, David J"
 date: "April 1, 2023"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{PSpecteR_Library_Demo.Rmd}
+  %\VignetteIndexEntry{pspecterlib}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -146,7 +146,10 @@ options for get_matched_peaks include selecting ions (a-c, x-z), adding a modifi
 alternative sequences, spectrum, or charges. 
 
 ```{r get_matched_peaks}
-BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, PeakData = BU_Peak, DebugMode = FALSE)
+BU_Match <- get_matched_peaks(ScanMetadata = BU_ScanMetadata, 
+                              PeakData = BU_Peak, 
+                              DebugMode = FALSE, 
+                              IsotopeAlgorithm = "isopat")
 
 BU_Match %>%
   head() %>%
@@ -249,7 +252,8 @@ BU_Match2 <- get_matched_peaks(
   AlternativeIonGroups = make_mass_modified_ion(Ion = c("b", "z"),
                                                 Symbol = c("+", "+"),
                                                 AMU_Change = c(1.00727647, 1.00727647)),
-  DebugMode = FALSE
+  DebugMode = FALSE,
+  IsotopeAlgorithm = "isopat"
 )
 
 Results <- rbind(
@@ -360,11 +364,3 @@ Molecule2 <- as.molform("O-8") # They can include negatives!
 add_molforms(Molecule1, Molecule2, CapNegatives = TRUE) %>% # Cap Negatives to prevent counts below 0
   collapse_molform() # Collapse vector to readable format
 ```
-
-
-
-
-
-
-
-

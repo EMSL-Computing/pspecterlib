@@ -1,6 +1,6 @@
 Package: pspecterlib
 Type: Package
-Title: PSpecteR Library - Visualization tools for top-down and bottom-up proteomics data
+Title:PSpecteR Library - Visualization Tools for Top-Down and Bottom-Up Proteomics Data
 Version: 1.1.1
 Date: 2024-01-01
 Authors@R: c(person("David", "Degnan", email = "david.degnan@pnnl.gov", role = c("aut", "cre")))
@@ -8,8 +8,6 @@ Description: Provides functionality to visually examine LC-MS top-down and botto
 License: MIT + file LICENSE
 Depends: R (>= 4.1.0)
 LazyData: TRUE
-URL: https://github.com/emsl-computing/pspecter-lib
-BugReports: https://github.com/emsl-computing/pspecter-lib/issues
 VignetteBuilder: knitr
 biocViews:
     rawrr

@@ -97,7 +97,7 @@ sequence_plot <- function(MatchedPeaks,
   SeqDF <- data.table::data.table(
     "Amino Acid" = strsplit(Seq, "") %>% unlist(),
     "x" = rep_len(1:WrapLength, nchar(Seq)),
-    "y" = (1:nchar(Seq) / -WrapLength) %>% floor()
+    "y" = floor(1:nchar(Seq) / -WrapLength)
   )
 
   # Add segments to identified ions: ABC Ions

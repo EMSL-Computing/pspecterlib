@@ -1,0 +1,25 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: pspecter-lib
+  title: PSpecteR Library
+  description: Proteomics R package for matching peptide fragments for both digested and intact proteomics
+  annotations:
+    # Conditional host-specific annotations rendered to avoid empty-string values that fail catalog validation.
+    github.com/project-slug: EMSL-Computing/pspecterlib
+  links:
+    - title: PSpecteR Library Repository
+      url: https://github.com/EMSL-Computing/pspecterlib
+  tags:
+    - proteomics
+    - peptide
+    - proteomics
+    - r-package
+spec:
+  type: library
+  owner: user:default/david.degnan_pnnl.gov # David Degnan project contributor
+  visibility: private # to expose this item in the catalog to others at PNNL, change the visibility to 'public'
+  # system: 
+  lifecycle: production
+  dependencyOf:
+    - component:default/isoforma-lib
